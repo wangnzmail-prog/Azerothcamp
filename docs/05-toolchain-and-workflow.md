@@ -118,3 +118,4 @@ node -e "const l=require('luaparse');const fs=require('fs');l.parse(fs.readFileS
 6. **SavedVariables 没做 schema 迁移** → 老用户升级后配置错乱。
 7. **UTF-8 BOM** → 部分版本会把 BOM 当内容，出现奇怪的 `ï»¿`。
 8. **在 `ADDON_LOADED` 里就访问其他插件** → 加载顺序不保证，改用 `PLAYER_LOGIN` 或 `## OptionalDeps`。
+9. **用 PowerShell 写 Lua/TOC 带 BOM** → Windows PowerShell 5.1 的 `Set-Content -Encoding UTF8` 会写 BOM，还会把中文按 ANSI 读成乱码；后果是整份 TOC 失效、Lua 首字节报错。必须用 UTF-8 无 BOM 写（`check.ps1` 已自动检测 BOM 并判失败）。

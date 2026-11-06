@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Validate addon TOC Interface numbers against the installed clients, and
   syntax-check every .lua under addon\ (requires tools\node_modules\luaparse).
@@ -133,6 +133,24 @@ else {
     }
 }
 
+# ---------- 5. encoding (BOM) ----------
+# WoW parses .toc/.lua as UTF-8 without BOM; a BOM breaks the first token
+# (seen in practice: "## Interface" became unreachable and the whole TOC was ignored).
+Write-Host '=== encoding (BOM) ===' -ForegroundColor Cyan
+$bomBad = 0
+$addonFiles = Get-ChildItem -Path $addonRoot -Recurse -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Extension -in '.lua', '.toc', '.xml' }
+foreach ($f in $addonFiles) {
+    $bytes = [System.IO.File]::ReadAllBytes($f.FullName)
+    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+        $bomBad++
+        Write-Host ("BOM  " + $f.Name) -ForegroundColor Red
+    }
+}
+if ($bomBad -eq 0) {
+    Write-Host ("OK   no BOM ({0} files)" -f $addonFiles.Count) -ForegroundColor Green
+}
+
 Write-Host ''
 if ($mismatch.Count -gt 0) {
     Write-Host ("Interface mismatch on {0} row(s): bump the TOC after a client patch." -f $mismatch.Count) -ForegroundColor Yellow
@@ -140,8 +158,11 @@ if ($mismatch.Count -gt 0) {
 if ($syntaxBad -gt 0) {
     Write-Host ("Lua syntax errors: {0}" -f $syntaxBad) -ForegroundColor Red
 }
+if ($bomBad -gt 0) {
+    Write-Host ("Files with BOM: {0} (rewrite as UTF-8 without BOM)" -f $bomBad) -ForegroundColor Red
+}
 
-if ($syntaxBad -gt 0) { exit 1 }
+if ($syntaxBad -gt 0 -or $bomBad -gt 0) { exit 1 }
 exit 0
 
 

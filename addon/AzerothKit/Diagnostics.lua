@@ -1,4 +1,4 @@
--- Diagnostics.lua · /ak 命令、探针、配置导出
+-- Diagnostics.lua · /ak 命令、探针、配置导出、整合状态
 local ADDON, ns = ...
 local P = ns.Platform
 local C = ns.Core
@@ -16,7 +16,7 @@ end
 
 function D.PrintVersion()
     local order = C:GetModules()
-    out(string.format("v0.3.0 · %s · build %s · Interface %d · 模块 %d 个",
+    out(string.format("v0.4.0 · %s · build %s · Interface %d · 模块 %d 个",
         P.GetFlavorLabel(), tostring(P.build), P.toc, #order))
 end
 
@@ -31,20 +31,45 @@ function D.PrintModules()
     end
 end
 
+function D.PrintIntegrations()
+    local order, list = C:GetIntegrations()
+    out(string.format("整合 (%d):", #order))
+    for _, name in ipairs(order) do
+        local def = list[name]
+        local loaded = C:IsAddonLoaded(def.addon)
+        local state = loaded and "|cff4dcc59已检测|r" or "|cff808080未安装|r"
+        local detail = ""
+        if loaded and def.Snapshot then
+            local ok, text = pcall(def.Snapshot, def)
+            if ok and text then
+                detail = "  " .. tostring(text)
+            end
+        end
+        out(string.format("  %-10s %s%s", name, state, detail))
+    end
+end
+
 function D.PrintSchema()
     local order, modules = C:GetModules()
     out("可调项 schema:")
     for _, name in ipairs(order) do
         local m = modules[name]
-        if #m.settings > 0 then
-            for _, s in ipairs(m.settings) do
-                local range = ""
-                if s.min or s.max then
-                    range = string.format("  range=[%s..%s]", tostring(s.min), tostring(s.max))
-                end
-                out(string.format("  %s.%s  %s  default=%s%s",
-                    name, s.key, tostring(s.type or "any"), tostring(s.default), range))
+        for _, s in ipairs(m.settings) do
+            local range = ""
+            if s.min or s.max then
+                range = string.format("  [%s..%s]", tostring(s.min), tostring(s.max))
             end
+            out(string.format("  %s.%s  %s  default=%s%s",
+                name, s.key, tostring(s.type or "any"), tostring(s.default), range))
+        end
+    end
+
+    local iorder, list = C:GetIntegrations()
+    for _, name in ipairs(iorder) do
+        local def = list[name]
+        for _, s in ipairs(def.settings) do
+            out(string.format("  %s.%s  %s  default=%s  [integration]",
+                name, s.key, tostring(s.type or "any"), tostring(s.default)))
         end
     end
 end
@@ -93,6 +118,7 @@ function D.PrintProbe()
         out(string.format("  [%s] %s", mark, cap.label))
     end
     D.PrintModules()
+    D.PrintIntegrations()
     out(string.format("已应用配置档案版本: %s", tostring(ns.db and ns.db.appliedProfile or 0)))
 end
 
@@ -120,8 +146,9 @@ end
 local function PrintHelp()
     out("命令:")
     out("  /ak              开关面板")
-    out("  /ak probe        能力矩阵 + 模块状态 + 档案版本")
+    out("  /ak probe        能力矩阵 + 模块 + 整合 + 档案版本")
     out("  /ak modules      模块列表")
+    out("  /ak integrations 第三方插件整合状态")
     out("  /ak schema       可调项 schema（Agent 与面板共用）")
     out("  /ak export       导出当前配置到 SavedVariables，供 Agent 读取")
     out("  /ak toggle <名>  开关某个模块")
@@ -140,6 +167,8 @@ local function Handle(msg)
         D.PrintProbe()
     elseif cmd == "modules" then
         D.PrintModules()
+    elseif cmd == "integrations" then
+        D.PrintIntegrations()
     elseif cmd == "schema" then
         D.PrintSchema()
     elseif cmd == "export" then

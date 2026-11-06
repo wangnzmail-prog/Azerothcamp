@@ -166,16 +166,28 @@ end
 
 ## 9. 现状与下一步
 
-**已完成（v0.3.0）**
+**已完成（v0.4.0）**
 
-- `Core` 增加 settings schema、`GetSetting/SetSetting`、`ApplyProfile/SyncProfile`、`ExportProfile`
+- `Core`：settings schema、`GetSetting/SetSetting`、`ApplyProfile/SyncProfile`、`ExportProfile`
 - 固定写入口 `Profile.lua` + 版本化覆盖
 - `tools\ak-config.ps1`：JSON → Profile.lua（自动 +1 版本、自动校验），已跑通
-- `/ak schema`、`/ak export`、`/ak export` 落盘链路
+- `/ak schema`、`/ak export`、`/ak integrations`
+- **整合层框架**：`C:RegisterIntegration(name, def)` + `ApplyIntegrations()`（登录时按"对方是否加载"分派）
+- **第一个适配器** `Integrations\Details.lua`：检测 Details、读版本/窗口数/皮肤、把我们的 `scale` 设置应用到它所有窗口
 
 **待做**
 
 1. `tools\ak-read.ps1`：解析 `AzerothKit.lua`，把 `exportText` 提取成 JSON（补齐"读"这一环）
-2. `Integrations/` 框架 + 第一个适配器（建议 Details）
-3. 面板里渲染 settings（滑块/下拉），让游戏内也能改
+2. 面板里渲染 settings（滑块/下拉），让游戏内也能改，不必只靠 JSON
+3. 第二个适配器（DBM 计时条 / NDui 同名模块接管）
 4. `/chatlog` 实时通道（可选，用于看报错流）
+
+## 10. 实战记录：两个已经踩过的坑
+
+**坑 1：PowerShell 写文件带 BOM。**
+用 `Set-Content -Encoding UTF8`（Windows PowerShell 5.1）会写入 **BOM**，并且会把源码里的中文按 ANSI 读成乱码。后果很隐蔽：`## Interface` 前的 BOM 让整份 TOC 失效（`check.ps1` 报 `NO-INTERFACE`），Lua 文件首字节也过不了语法检查。
+
+现在 `check.ps1` 会扫描 `addon/` 下所有 `.lua/.toc/.xml` 的 BOM 并直接判失败；写文件请用 `[System.IO.File]::WriteAllText($p, $text, (New-Object System.Text.UTF8Encoding($false)))`。
+
+**坑 2：首次加载的 DB 是旧 schema。**
+`WTF\...\SavedVariables\AzerothKit.lua` 里如果还是 `["schema"] = 1`，说明客户端跑的是 0.2 及以前的构建；0.4 会把 schema 迁到 2 并应用 `Profile.lua`（聊天框会打印"已应用配置档案 vN"）。看到这行才算真正验证了新内核。

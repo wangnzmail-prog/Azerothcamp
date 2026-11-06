@@ -10,6 +10,7 @@ local DB_DEFAULTS = {
     schema = 2,
     showOnLogin = true,
     modules = {},
+    integrations = {},
     pos = nil,
     appliedProfile = 0,
     exportText = nil,
@@ -121,6 +122,96 @@ function C:ApplyModules()
     end
 end
 
+-- ---------- 整合层：接管/适配第三方插件 ----------
+-- 一个第三方插件一个文件：Integrations\<Addon>.lua
+-- 生命周期：登录时若对方已加载 → OnAddonLoaded(def)；改设置 → ApplySetting(def, key, value)
+local integrations, iorder = {}, {}
+
+function C:RegisterIntegration(name, def)
+    if integrations[name] then
+        error("duplicate integration: " .. tostring(name))
+    end
+    def = def or {}
+    def.name = name
+    def.label = def.label or name
+    def.addon = def.addon or name
+    def.settings = def.settings or {}
+    integrations[name] = def
+    iorder[#iorder + 1] = name
+    return def
+end
+
+function C:GetIntegrations()
+    return iorder, integrations
+end
+
+function C:IsAddonLoaded(name)
+    if C_AddOns and C_AddOns.IsAddOnLoaded then
+        return C_AddOns.IsAddOnLoaded(name) and true or false
+    end
+    if type(IsAddOnLoaded) == "function" then
+        return IsAddOnLoaded(name) and true or false
+    end
+    return false
+end
+
+function C:GetAddonVersion(name)
+    if C_AddOns and C_AddOns.GetAddOnMetadata then
+        return C_AddOns.GetAddOnMetadata(name, "Version")
+    end
+    if type(GetAddOnMetadata) == "function" then
+        return GetAddOnMetadata(name, "Version")
+    end
+end
+
+local function IStore(name)
+    if not ns.db then return {} end
+    ns.db.integrations = ns.db.integrations or {}
+    local store = ns.db.integrations[name]
+    if type(store) ~= "table" then
+        store = {}
+        ns.db.integrations[name] = store
+    end
+    return store
+end
+
+function C:GetIntegrationSetting(name, key)
+    local store = ns.db and ns.db.integrations and ns.db.integrations[name]
+    if type(store) == "table" and store[key] ~= nil then
+        return store[key]
+    end
+    local def = integrations[name]
+    if def then
+        for _, s in ipairs(def.settings) do
+            if s.key == key then return s.default end
+        end
+    end
+end
+
+function C:SetIntegrationSetting(name, key, value)
+    if not ns.db then return end
+    IStore(name)[key] = value
+    local def = integrations[name]
+    if def and def.ApplySetting then
+        local ok, err = pcall(def.ApplySetting, def, key, value)
+        if not ok then
+            print("|cffff4040[AzerothKit]|r " .. name .. "." .. key .. ": " .. tostring(err))
+        end
+    end
+end
+
+function C:ApplyIntegrations()
+    for _, name in ipairs(iorder) do
+        local def = integrations[name]
+        if self:IsAddonLoaded(def.addon) and def.OnAddonLoaded then
+            local ok, err = pcall(def.OnAddonLoaded, def)
+            if not ok then
+                print("|cffff4040[AzerothKit]|r integration " .. name .. ": " .. tostring(err))
+            end
+        end
+    end
+end
+
 -- ---------- 设置 schema ----------
 -- 模块用 settings = { { key, type, default, min, max, step, label, enum } } 声明可调项，
 -- Agent 与游戏内面板都以它为唯一事实来源。
@@ -161,19 +252,27 @@ end
 -- 语义：version 变了才覆盖，避免每次登录冲掉玩家的手动改动。
 
 function C:ApplyProfile(profile)
-    if type(profile) ~= "table" or type(profile.modules) ~= "table" then return 0 end
+    if type(profile) ~= "table" then return 0 end
     local count = 0
-    for name, values in pairs(profile.modules) do
-        if type(values) == "table" then
-            local store = Store(name)
-            for k, v in pairs(values) do
-                if type(v) ~= "table" and type(v) ~= "function" then
-                    store[k] = v
-                    count = count + 1
+
+    local function merge(section, target)
+        if type(section) ~= "table" then return end
+        for name, values in pairs(section) do
+            if type(values) == "table" then
+                local store = target(name)
+                for k, v in pairs(values) do
+                    if type(v) ~= "table" and type(v) ~= "function" then
+                        store[k] = v
+                        count = count + 1
+                    end
                 end
             end
         end
     end
+
+    merge(profile.modules, Store)
+    merge(profile.integrations, IStore)
+
     ns.db.appliedProfile = tonumber(profile.version) or 0
     return count
 end
@@ -217,18 +316,27 @@ end
 C.Serialize = Serialize
 
 function C:ExportProfile()
-    local out = { version = (tonumber(ns.db.appliedProfile) or 0) + 1, modules = {} }
-    for name, store in pairs(ns.db.modules or {}) do
-        if type(store) == "table" then
-            local copy = {}
-            for k, v in pairs(store) do
-                if type(v) ~= "table" and type(v) ~= "function" then
-                    copy[k] = v
+    local out = { version = (tonumber(ns.db.appliedProfile) or 0) + 1, modules = {}, integrations = {} }
+
+    local function copy(section)
+        local result = {}
+        if type(section) ~= "table" then return result end
+        for name, store in pairs(section) do
+            if type(store) == "table" then
+                local row = {}
+                for k, v in pairs(store) do
+                    if type(v) ~= "table" and type(v) ~= "function" then
+                        row[k] = v
+                    end
                 end
+                result[name] = row
             end
-            out.modules[name] = copy
         end
+        return result
     end
+
+    out.modules = copy(ns.db.modules)
+    out.integrations = copy(ns.db.integrations)
     return out
 end
 
@@ -278,6 +386,7 @@ boot:SetScript("OnEvent", function(self, event, arg1)
     elseif event == "PLAYER_LOGIN" then
         C:SyncProfile()
         C:ApplyModules()
+        C:ApplyIntegrations()
         if ns.db.showOnLogin and ns.Diagnostics then
             ns.Diagnostics.PrintVersion()
         end

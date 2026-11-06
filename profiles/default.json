@@ -5,5 +5,10 @@
       "scale": 1.1,
       "offsetY": -8
     }
+  },
+  "integrations": {
+    "Details": {
+      "scale": 1.0
+    }
   }
 }

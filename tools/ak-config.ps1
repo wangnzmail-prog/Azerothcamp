@@ -82,7 +82,7 @@ function Format-LuaValue {
 }
 
 $profile = Get-Content -LiteralPath $jsonPath -Raw | ConvertFrom-Json
-if (-not $profile -or -not $profile.modules) { throw "JSON has no modules object: $jsonPath" }
+if (-not $profile -or (-not $profile.modules -and -not $profile.integrations)) { throw "JSON has neither modules nor integrations: $jsonPath" }
 
 # ---- version: explicit, or current + 1 ----
 $current = 0
@@ -96,6 +96,7 @@ $doc = [ordered]@{
     version = $newVersion
     modules = $profile.modules
 }
+if ($profile.integrations) { $doc.integrations = $profile.integrations }
 
 $lua = Format-LuaValue $doc ''
 
@@ -126,4 +127,5 @@ if (-not $NoCheck) {
 }
 
 exit 0
+
 
