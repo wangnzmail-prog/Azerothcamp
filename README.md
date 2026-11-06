@@ -15,6 +15,7 @@
 | `docs/04-dual-flavor-architecture.md` | 一套代码同时跑正式服与无限的架构与写法 |
 | `docs/05-toolchain-and-workflow.md` | 本机工具链、部署脚本、调试命令、打包发布 |
 | `docs/06-roadmap-and-checklist.md` | 分阶段路线图、验证清单、待确认问题 |
+| `docs/07-ndui-details-anatomy.md` | NDui/Details 结构解剖、替代可行性矩阵、自研路线 |
 | `addon/AzerothKit/` | 可直接加载的双版本示例插件（0.1.0） |
 | `tools/deploy.ps1` | 把示例插件以目录联接方式挂进两个客户端 |
 | `tools/check.ps1` | 校验 TOC Interface 与本机客户端版本是否匹配 |
