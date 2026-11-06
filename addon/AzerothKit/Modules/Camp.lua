@@ -26,7 +26,7 @@ local M = C:RegisterModule("Camp", {
         { key = "patternAid",   type = "string", default = "急救包",     hidden = true },
         { key = "patternToy",   type = "string", default = "探险帐篷",   hidden = true },
         { key = "patternAura",  type = "string", default = "帐篷,营地,休息,篝火,火堆,Nearby,Tent,Camp,Rested", hidden = true },
-        { key = "auraIDs",      type = "string", default = "1229451,1229741", hidden = true },
+        { key = "auraIDs",      type = "string", default = "1229741", hidden = true },
         { key = "patternFireAura", type = "string", default = "营火,篝火,Campfire,Fire", hidden = true },
         { key = "campfireIDs", type = "string", default = "1229739,1283391", hidden = true },
         { key = "point",     type = "string", default = "TOPRIGHT", hidden = true },
@@ -273,9 +273,23 @@ local function AidCooldown()
     return 0
 end
 
--- 所有营地制品共享同一个 1 小时冷却：取所有候选里剩余时间最大的那个
+-- 所有营地制品共享同一个 1 小时冷却，游戏用一个 debuff 表示：强化休息 1229451
 local function SharedCooldown()
-    return math.max(TentCooldown(), CraftCooldown(), AidCooldown())
+    local api = C_UnitAuras
+    if api and api.GetAuraDataByIndex then
+        for i = 1, 40 do
+            local ok, data = pcall(api.GetAuraDataByIndex, "player", i, "HARMFUL")
+            if not ok or not data then break end
+            local sid = data.spellId
+            local isIt = (sid ~= nil and not ns.Platform.IsSecret(sid) and sid == 1229451)
+                or (data.name ~= nil and tostring(data.name):find("强化休息", 1, true) ~= nil)
+            if isIt then
+                local remain = (data.expirationTime or 0) - GetTime()
+                if remain > 0 then return remain, true end
+            end
+        end
+    end
+    return math.max(TentCooldown(), CraftCooldown(), AidCooldown()), false
 end
 
 -- ---------- 动作 ----------
@@ -420,7 +434,7 @@ local function Refresh()
     panel.fire:SetTextColor(fireColor[1], fireColor[2], fireColor[3])
 
     -- 帐篷：玩具(+20%) 与 制皮帐篷(+5%) 各自独立判定
-    local sharedCd = SharedCooldown()
+    local sharedCd, cdFromAura = SharedCooldown()
     state.sharedCd = sharedCd
     local readyBase = (state.fireAura ~= nil) and (sharedCd <= 0)
     state.toyReady = readyBase and (state.toyID ~= nil)
@@ -461,7 +475,8 @@ local function Refresh()
         if not state.fireAura then
             panel.tentStatus:SetText(L("需要附近有营火", "needs a campfire"))
         elseif sharedCd > 0 then
-            panel.tentStatus:SetText(L("共享冷却", "shared cd") .. " " .. FormatRemain(sharedCd))
+            local label = cdFromAura and L("强化休息", "Rested") or L("共享冷却", "shared cd")
+            panel.tentStatus:SetText(label .. " " .. FormatRemain(sharedCd))
         else
             panel.tentStatus:SetText("")
         end
