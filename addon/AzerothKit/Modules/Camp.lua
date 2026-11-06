@@ -57,7 +57,7 @@ local function ItemName(itemID)
 end
 
 local function ScanBag(pattern)
-    local total, bagIdx, slotIdx, sampleID = 0, nil, nil, nil
+    local total, bagIdx, slotIdx, sampleID, sampleName = 0, nil, nil, nil, nil
     local maxBag = NUM_BAG_SLOTS or 4
     for bag = 0, maxBag do
         local slots = C_Container.GetContainerNumSlots(bag) or 0
@@ -68,13 +68,13 @@ local function ScanBag(pattern)
                 if name and name:find(pattern, 1, true) then
                     total = total + (info.stackCount or 1)
                     if not bagIdx then
-                        bagIdx, slotIdx, sampleID = bag, slot, info.itemID
+                        bagIdx, slotIdx, sampleID, sampleName = bag, slot, info.itemID, name
                     end
                 end
             end
         end
     end
-    return total, bagIdx, slotIdx, sampleID
+    return total, bagIdx, slotIdx, sampleID, sampleName
 end
 
 local function FindRecipe(pattern)
@@ -113,10 +113,10 @@ local function Rescan()
     local tent = C:GetSetting("Camp", "patternTent")
     local toy = C:GetSetting("Camp", "patternToy")
 
-    state.kit, state.kitBag, state.kitSlot = ScanBag(kit)
-    state.flint = ScanBag(flint)
-    state.wood = ScanBag(wood)
-    state.tent, state.tentBag, state.tentSlot, state.tentID = ScanBag(tent)
+    state.kit, state.kitBag, state.kitSlot, state.kitID, state.kitName = ScanBag(kit)
+    state.flint, state.flintBag, state.flintSlot, state.flintID, state.flintName = ScanBag(flint)
+    state.wood, state.woodBag, state.woodSlot, state.woodID, state.woodName = ScanBag(wood)
+    state.tent, state.tentBag, state.tentSlot, state.tentID, state.tentName = ScanBag(tent)
     if not state.recipeID then
         state.recipeID = FindRecipe(kit)
     end
@@ -344,10 +344,12 @@ local function Refresh()
     -- 营火行
     local fireText, fireColor
     if state.kit > 0 then
-        fireText = string.format("|cffffd700%s|r ×%d", L("营火工具包", "Campfire Kit"), state.kit)
+        fireText = string.format("|cffffd700%s|r ×%d",
+            state.kitName or L("营火工具包", "Campfire Kit"), state.kit)
         fireColor = { 1, 1, 1 }
     elseif state.flint > 0 then
-        fireText = string.format("|cffd8d8d8%s|r ×%d", L("燧石和火绒", "Flint and Tinder"), state.flint)
+        fireText = string.format("|cffd8d8d8%s|r ×%d",
+            state.flintName or L("燧石和火绒", "Flint and Tinder"), state.flint)
         fireColor = { 1, 1, 1 }
     else
         fireText = "|cff606060" .. L("无营火材料", "No fire kit") .. "|r"
@@ -365,7 +367,8 @@ local function Refresh()
     if state.toyID then
         tentName = string.format("|cff69ccf0%s|r", state.toyName or L("探险帐篷", "Expedition Tent"))
     elseif state.tent > 0 then
-        tentName = string.format("|cffd8d8d8%s|r ×%d", L("营地帐篷", "Camp Tent"), state.tent)
+        tentName = string.format("|cffd8d8d8%s|r ×%d",
+            state.tentName or L("营地帐篷", "Camp Tent"), state.tent)
     end
 
     local cd = tentName and TentCooldown() or 0
@@ -411,7 +414,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 300, 120)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 300, 104)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -420,38 +423,38 @@ local function CreatePanel()
     p.title:SetText(L("露营管理", "Camping"))
 
     p.fire = T:CreateText(p, 12, false)
-    p.fire:SetPoint("TOPLEFT", 10, -26)
-    p.fire:SetPoint("TOPRIGHT", -10, -26)
+    p.fire:SetPoint("TOPLEFT", 10, -24)
+    p.fire:SetPoint("TOPRIGHT", -10, -24)
     p.fire:SetText("")
 
     -- 行区块：可点击
     local fireBtn = CreateFrame("Button", nil, p)
-    fireBtn:SetPoint("TOPLEFT", 6, -22)
-    fireBtn:SetPoint("TOPRIGHT", -6, -22)
+    fireBtn:SetPoint("TOPLEFT", 6, -20)
+    fireBtn:SetPoint("TOPRIGHT", -6, -20)
     fireBtn:SetHeight(18)
     fireBtn:SetScript("OnClick", function() ToggleFire() end)
     p.fireBtn = fireBtn
 
     p.tent = T:CreateText(p, 12, false)
-    p.tent:SetPoint("TOPLEFT", 10, -50)
-    p.tent:SetPoint("TOPRIGHT", -10, -50)
+    p.tent:SetPoint("TOPLEFT", 10, -44)
+    p.tent:SetPoint("TOPRIGHT", -10, -44)
     p.tent:SetText("")
 
     local tentBtn = CreateFrame("Button", nil, p, "SecureActionButtonTemplate")
-    tentBtn:SetPoint("TOPLEFT", 6, -46)
-    tentBtn:SetPoint("TOPRIGHT", -6, -46)
+    tentBtn:SetPoint("TOPLEFT", 6, -40)
+    tentBtn:SetPoint("TOPRIGHT", -6, -40)
     tentBtn:SetHeight(18)
     tentBtn:RegisterForClicks("AnyUp")
     p.tentBtn = tentBtn
 
     p.fireStatus = T:CreateText(p, 11, true)
-    p.fireStatus:SetPoint("TOPLEFT", 10, -72)
-    p.fireStatus:SetPoint("TOPRIGHT", -10, -72)
+    p.fireStatus:SetPoint("TOPLEFT", 10, -64)
+    p.fireStatus:SetPoint("TOPRIGHT", -10, -64)
     p.fireStatus:SetText("")
 
     p.aura = T:CreateText(p, 11, true)
-    p.aura:SetPoint("TOPLEFT", 10, -94)
-    p.aura:SetPoint("TOPRIGHT", -10, -94)
+    p.aura:SetPoint("TOPLEFT", 10, -84)
+    p.aura:SetPoint("TOPRIGHT", -10, -84)
     p.aura:SetText("")
 
     T:MakeMovable(p, function(point, relPoint, x, y)
