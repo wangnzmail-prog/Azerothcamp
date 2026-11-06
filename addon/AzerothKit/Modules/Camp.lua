@@ -24,6 +24,7 @@ local M = C:RegisterModule("Camp", {
         { key = "patternTent",  type = "string", default = "营地帐篷",   hidden = true },
         { key = "patternToy",   type = "string", default = "探险帐篷",   hidden = true },
         { key = "patternAura",  type = "string", default = "帐篷,营地,休息,篝火,火堆,Nearby,Tent,Camp,Rested", hidden = true },
+        { key = "patternFireAura", type = "string", default = "营火,篝火,Campfire,Fire", hidden = true },
         { key = "point",     type = "string", default = "TOPRIGHT", hidden = true },
         { key = "relPoint",  type = "string", default = "TOPRIGHT", hidden = true },
         { key = "x",         type = "number", default = -20, hidden = true },
@@ -39,6 +40,8 @@ local state = {
     tent = 0, tentSlot = nil,
     toyID = nil, toyName = nil,
     recipeID = nil,
+    fireAura = nil,     -- 附近营火的光环名
+    tentReady = false,  -- 有帐篷 + 附近有营火 + 不在冷却
 }
 
 -- ---------- 查询 ----------
@@ -148,6 +151,58 @@ local function PlayerAuras()
     return list
 end
 
+local function Needles(pattern)
+    local list = {}
+    for piece in (pattern or ""):gmatch("[^,]+") do
+        local p = piece:match("^%s*(.-)%s*$")
+        if p ~= "" then list[#list + 1] = p end
+    end
+    return list
+end
+
+-- 附近营火：帐篷的前置条件
+local function ScanFireAura()
+    local api = C_UnitAuras
+    if not api or not api.GetAuraDataByIndex then return nil end
+    local needles = Needles(C:GetSetting("Camp", "patternFireAura"))
+    if #needles == 0 then return nil end
+
+    for _, filter in ipairs({ "HELPFUL", "HARMFUL" }) do
+        for i = 1, 40 do
+            local ok, data = pcall(api.GetAuraDataByIndex, "player", i, filter)
+            if not ok or not data then break end
+            local name = data.name
+            if name then
+                for _, n in ipairs(needles) do
+                    if name:find(n, 1, true) then return name end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+-- 帐篷冷却（玩具 1 小时 / 制皮帐篷同）
+local function TentCooldown()
+    local now = GetTime()
+    if state.toyID and C_Item and C_Item.GetItemCooldown then
+        local start, duration = C_Item.GetItemCooldown(state.toyID)
+        if start and duration and duration > 0 then
+            local remain = (start + duration) - now
+            if remain > 0 then return remain end
+        end
+        return 0
+    end
+    if state.tentBag and state.tentSlot and C_Container.GetContainerItemCooldown then
+        local start, duration = C_Container.GetContainerItemCooldown(state.tentBag, state.tentSlot)
+        if start and duration and duration > 0 then
+            local remain = (start + duration) - now
+            if remain > 0 then return remain end
+        end
+    end
+    return 0
+end
+
 -- ---------- 动作 ----------
 local function UseBag(bag, slot)
     if not bag or not slot then return false end
@@ -226,11 +281,11 @@ local function UpdateTentButton()
         return -- 战斗中不能改安全属性，等脱战再刷
     end
 
-    if state.toyID then
+    if state.tentReady and state.toyID then
         b:SetAttribute("type", "toy")
         b:SetAttribute("toy", "item:" .. state.toyID)
         b:SetAttribute("item", nil)
-    elseif state.tent > 0 and state.tentID then
+    elseif state.tentReady and state.tent > 0 and state.tentID then
         b:SetAttribute("type", "item")
         b:SetAttribute("item", "item:" .. state.tentID)
         b:SetAttribute("toy", nil)
@@ -243,6 +298,8 @@ end
 
 local function Refresh()
     if not panel then return end
+
+    state.fireAura = ScanFireAura()
 
     -- 营火行
     local fireText, fireColor
@@ -259,20 +316,38 @@ local function Refresh()
     panel.fire:SetText(fireText)
     panel.fire:SetTextColor(fireColor[1], fireColor[2], fireColor[3])
 
-    -- 帐篷行
-    local tentText, tentColor
+    -- 帐篷行：有帐篷 → 检查附近营火 → 检查冷却
+    local tentName
     if state.toyID then
-        tentText = string.format("|cff69ccf0%s|r ×∞", state.toyName or L("探险帐篷", "Expedition Tent"))
-        tentColor = { 1, 1, 1 }
+        tentName = string.format("|cff69ccf0%s|r", state.toyName or L("探险帐篷", "Expedition Tent"))
     elseif state.tent > 0 then
-        tentText = string.format("|cffd8d8d8%s|r ×%d", L("营地帐篷", "Camp Tent"), state.tent)
-        tentColor = { 1, 1, 1 }
-    else
+        tentName = string.format("|cffd8d8d8%s|r ×%d", L("营地帐篷", "Camp Tent"), state.tent)
+    end
+
+    local cd = tentName and TentCooldown() or 0
+    state.tentReady = (tentName ~= nil) and (state.fireAura ~= nil) and (cd <= 0)
+
+    local tentText
+    if not tentName then
         tentText = "|cff606060" .. L("无帐篷", "No tent") .. "|r"
-        tentColor = { 0.5, 0.5, 0.5 }
+    elseif not state.fireAura then
+        tentText = tentName .. "  |cff606060" .. L("需要附近有营火", "needs a campfire") .. "|r"
+    elseif cd > 0 then
+        tentText = tentName .. "  |cff606060" .. L("冷却", "cooldown") .. " " .. FormatRemain(cd) .. "|r"
+    else
+        tentText = tentName
     end
     panel.tent:SetText(tentText)
-    panel.tent:SetTextColor(tentColor[1], tentColor[2], tentColor[3])
+    panel.tent:SetTextColor(1, 1, 1)
+
+    -- 营火状态行
+    if panel.fireStatus then
+        if state.fireAura then
+            panel.fireStatus:SetText("|cff4dcc59" .. L("营火", "Campfire") .. "|r " .. state.fireAura)
+        else
+            panel.fireStatus:SetText("|cff606060" .. L("营火：附近没有", "Campfire: none nearby") .. "|r")
+        end
+    end
 
     -- 光环行
     local auras = PlayerAuras()
@@ -292,7 +367,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 300, 96)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 300, 120)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -325,9 +400,14 @@ local function CreatePanel()
     tentBtn:RegisterForClicks("AnyUp")
     p.tentBtn = tentBtn
 
+    p.fireStatus = T:CreateText(p, 11, true)
+    p.fireStatus:SetPoint("TOPLEFT", 10, -72)
+    p.fireStatus:SetPoint("TOPRIGHT", -10, -72)
+    p.fireStatus:SetText("")
+
     p.aura = T:CreateText(p, 11, true)
-    p.aura:SetPoint("TOPLEFT", 10, -72)
-    p.aura:SetPoint("TOPRIGHT", -10, -72)
+    p.aura:SetPoint("TOPLEFT", 10, -94)
+    p.aura:SetPoint("TOPRIGHT", -10, -94)
     p.aura:SetText("")
 
     T:MakeMovable(p, function(point, relPoint, x, y)
@@ -419,6 +499,8 @@ function M:ScanReport()
         "kit", state.kit, "flint", state.flint, "wood", state.wood, "tent", state.tent))
     add(string.format("recipe=%s  toy=%s(%s)",
         tostring(state.recipeID), tostring(state.toyID), tostring(state.toyName)))
+    add(string.format("fireAura=%s  tentReady=%s  cooldown=%s",
+        tostring(state.fireAura), tostring(state.tentReady), tostring(math.floor(TentCooldown()))))
 
     for bag = 0, (NUM_BAG_SLOTS or 4) do
         local slots = C_Container.GetContainerNumSlots(bag) or 0
