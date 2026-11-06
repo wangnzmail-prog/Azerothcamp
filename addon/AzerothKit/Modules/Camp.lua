@@ -23,6 +23,7 @@ local M = C:RegisterModule("Camp", {
         { key = "patternFlint", type = "string", default = "燧石",       hidden = true },
         { key = "patternWood",  type = "string", default = "木柴",       hidden = true },
         { key = "patternTent",  type = "string", default = "营地帐篷",   hidden = true },
+        { key = "patternAid",   type = "string", default = "急救包",     hidden = true },
         { key = "patternToy",   type = "string", default = "探险帐篷",   hidden = true },
         { key = "patternAura",  type = "string", default = "帐篷,营地,休息,篝火,火堆,Nearby,Tent,Camp,Rested", hidden = true },
         { key = "auraIDs",      type = "string", default = "1229451,1229741", hidden = true },
@@ -48,6 +49,8 @@ local state = {
     tentReady = false,  -- 有帐篷 + 附近有营火 + 不在冷却
     toyReady = false,
     craftReady = false,
+    aid = 0, aidBag = nil, aidSlot = nil, aidID = nil, aidName = nil,
+    sharedCd = 0,
 }
 
 local function Needles(pattern)
@@ -138,6 +141,7 @@ local function Rescan()
     state.flint, state.flintBag, state.flintSlot, state.flintID, state.flintName = ScanBag(flint)
     state.wood, state.woodBag, state.woodSlot, state.woodID, state.woodName = ScanBag(wood)
     state.tent, state.tentBag, state.tentSlot, state.tentID, state.tentName = ScanBag(tent)
+    state.aid, state.aidBag, state.aidSlot, state.aidID, state.aidName = ScanBag(C:GetSetting("Camp", "patternAid"))
     if not state.recipeID then
         state.recipeID = FindRecipe(kit)
     end
@@ -259,6 +263,21 @@ local function CraftCooldown()
     return 0
 end
 
+local function AidCooldown()
+    if not (state.aidBag and state.aidSlot and C_Container.GetContainerItemCooldown) then return 0 end
+    local start, duration = C_Container.GetContainerItemCooldown(state.aidBag, state.aidSlot)
+    if start and duration and duration > 0 then
+        local remain = (start + duration) - GetTime()
+        if remain > 0 then return remain end
+    end
+    return 0
+end
+
+-- 所有营地制品共享同一个 1 小时冷却：取所有候选里剩余时间最大的那个
+local function SharedCooldown()
+    return math.max(TentCooldown(), CraftCooldown(), AidCooldown())
+end
+
 -- ---------- 动作 ----------
 local function UseBag(bag, slot)
     if not bag or not slot then return false end
@@ -351,6 +370,17 @@ local function UpdateTentButtons()
         end
     end
 
+    local aidBtn = panel.aidBtn
+    if aidBtn then
+        if state.aidReady and state.aidID then
+            aidBtn:SetAttribute("type", "item")
+            aidBtn:SetAttribute("item", "item:" .. state.aidID)
+        else
+            aidBtn:SetAttribute("type", nil)
+            aidBtn:SetAttribute("item", nil)
+        end
+    end
+
     local craftBtn = panel.craftBtn
     if craftBtn then
         if state.craftReady and state.tentID then
@@ -390,18 +420,17 @@ local function Refresh()
     panel.fire:SetTextColor(fireColor[1], fireColor[2], fireColor[3])
 
     -- 帐篷：玩具(+20%) 与 制皮帐篷(+5%) 各自独立判定
-    local toyCd = (state.toyID and TentCooldown()) or 0
-    local craftCd = (state.tent > 0 and CraftCooldown()) or 0
-    state.toyReady = (state.toyID ~= nil) and (state.fireAura ~= nil) and (toyCd <= 0)
-    state.craftReady = (state.tent > 0 and state.tentID ~= nil) and (state.fireAura ~= nil) and (craftCd <= 0)
+    local sharedCd = SharedCooldown()
+    state.sharedCd = sharedCd
+    local readyBase = (state.fireAura ~= nil) and (sharedCd <= 0)
+    state.toyReady = readyBase and (state.toyID ~= nil)
+    state.craftReady = readyBase and (state.tent > 0 and state.tentID ~= nil)
+    state.aidReady = readyBase and (state.aid > 0 and state.aidID ~= nil)
 
     if panel.tent then
         if state.toyID then
             local text = string.format("|cff69ccf0%s|r |cff808080+20%%|r",
                 state.toyName or L("探险帐篷", "Expedition Tent"))
-            if toyCd > 0 then
-                text = text .. "  |cff606060" .. FormatRemain(toyCd) .. "|r"
-            end
             panel.tent:SetText(text)
         else
             panel.tent:SetText("|cff606060" .. L("无探险帐篷玩具", "No expedition tent") .. "|r")
@@ -413,17 +442,29 @@ local function Refresh()
         if state.tent > 0 then
             local text = string.format("|cffd8d8d8%s|r ×%d |cff808080+5%%|r",
                 state.tentName or L("营地帐篷", "Camp Tent"), state.tent)
-            if craftCd > 0 then
-                text = text .. "  |cff606060" .. FormatRemain(craftCd) .. "|r"
-            end
             panel.tentCraft:SetText(text)
         else
             panel.tentCraft:SetText("|cff606060" .. L("无营地帐篷", "No camp tent") .. "|r")
         end
     end
 
+    if panel.aid then
+        if state.aid > 0 then
+            panel.aid:SetText(string.format("|cffd8d8d8%s|r ×%d",
+                state.aidName or L("急救包", "First Aid Kit"), state.aid))
+        else
+            panel.aid:SetText("|cff606060" .. L("无急救包", "No first aid kit") .. "|r")
+        end
+    end
+
     if panel.tentStatus then
-        panel.tentStatus:SetText(state.fireAura and "" or L("需要附近有营火", "needs a campfire"))
+        if not state.fireAura then
+            panel.tentStatus:SetText(L("需要附近有营火", "needs a campfire"))
+        elseif sharedCd > 0 then
+            panel.tentStatus:SetText(L("共享冷却", "shared cd") .. " " .. FormatRemain(sharedCd))
+        else
+            panel.tentStatus:SetText("")
+        end
     end
 
     -- 营火状态行
@@ -453,7 +494,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 128)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 146)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -498,19 +539,31 @@ local function CreatePanel()
     craftBtn:RegisterForClicks("AnyUp")
     p.craftBtn = craftBtn
 
+    p.aid = T:CreateText(p, 12, false)
+    p.aid:SetPoint("TOPLEFT", 10, -80)
+    p.aid:SetPoint("TOPRIGHT", -10, -80)
+    p.aid:SetText("")
+
+    local aidBtn = CreateFrame("Button", nil, p, "SecureActionButtonTemplate")
+    aidBtn:SetPoint("TOPLEFT", 6, -76)
+    aidBtn:SetPoint("TOPRIGHT", -6, -76)
+    aidBtn:SetHeight(16)
+    aidBtn:RegisterForClicks("AnyUp")
+    p.aidBtn = aidBtn
+
     p.tentStatus = T:CreateText(p, 10, true)
-    p.tentStatus:SetPoint("TOPLEFT", 10, -80)
-    p.tentStatus:SetPoint("TOPRIGHT", -10, -80)
+    p.tentStatus:SetPoint("TOPLEFT", 10, -98)
+    p.tentStatus:SetPoint("TOPRIGHT", -10, -98)
     p.tentStatus:SetText("")
 
     p.fireStatus = T:CreateText(p, 11, true)
-    p.fireStatus:SetPoint("TOPLEFT", 10, -96)
-    p.fireStatus:SetPoint("TOPRIGHT", -10, -96)
+    p.fireStatus:SetPoint("TOPLEFT", 10, -114)
+    p.fireStatus:SetPoint("TOPRIGHT", -10, -114)
     p.fireStatus:SetText("")
 
     p.aura = T:CreateText(p, 11, true)
-    p.aura:SetPoint("TOPLEFT", 10, -112)
-    p.aura:SetPoint("TOPRIGHT", -10, -112)
+    p.aura:SetPoint("TOPLEFT", 10, -130)
+    p.aura:SetPoint("TOPRIGHT", -10, -130)
     p.aura:SetText("")
 
     T:MakeMovable(p, function(point, relPoint, x, y)
@@ -605,8 +658,8 @@ function M:ScanReport()
         tostring(state.recipeID), tostring(state.toyID), tostring(state.toyName)))
     add(string.format("fireAura=%s(%s)  toyReady=%s  craftReady=%s  toyCd=%s  craftCd=%s",
         tostring(state.fireAura), tostring(state.fireAuraID), tostring(state.toyReady),
-        tostring(state.craftReady), tostring(math.floor(TentCooldown())),
-        tostring(math.floor(CraftCooldown()))))
+        tostring(state.craftReady), tostring(math.floor(SharedCooldown())),
+        tostring(math.floor(AidCooldown()))))
 
     for bag = 0, (NUM_BAG_SLOTS or 4) do
         local slots = C_Container.GetContainerNumSlots(bag) or 0
