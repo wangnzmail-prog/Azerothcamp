@@ -379,18 +379,20 @@ local function Refresh()
     local cd = tentName and TentCooldown() or 0
     state.tentReady = (tentName ~= nil) and (state.fireAura ~= nil) and (cd <= 0)
 
-    local tentText
-    if not tentName then
-        tentText = "|cff606060" .. L("无帐篷", "No tent") .. "|r"
-    elseif not state.fireAura then
-        tentText = tentName .. "  |cff606060" .. L("需要附近有营火", "needs a campfire") .. "|r"
-    elseif cd > 0 then
-        tentText = tentName .. "  |cff606060" .. FormatRemain(cd) .. "|r"
-    else
-        tentText = tentName
+    -- 名称与状态分两行：窄面板下不会折行
+    local tentText = tentName or ("|cff606060" .. L("无帐篷", "No tent") .. "|r")
+    local statusText = ""
+    if tentName and not state.fireAura then
+        statusText = L("需要附近有营火", "needs a campfire")
+    elseif tentName and cd > 0 then
+        statusText = L("冷却", "cd") .. " " .. FormatRemain(cd)
     end
+
     panel.tent:SetText(tentText)
     panel.tent:SetTextColor(1, 1, 1)
+    if panel.tentStatus then
+        panel.tentStatus:SetText(statusText)
+    end
 
     -- 营火状态行
     if panel.fireStatus then
@@ -419,7 +421,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 104)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 112)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -452,14 +454,19 @@ local function CreatePanel()
     tentBtn:RegisterForClicks("AnyUp")
     p.tentBtn = tentBtn
 
+    p.tentStatus = T:CreateText(p, 10, true)
+    p.tentStatus:SetPoint("TOPRIGHT", -10, -62)
+    p.tentStatus:SetJustifyH("RIGHT")
+    p.tentStatus:SetText("")
+
     p.fireStatus = T:CreateText(p, 11, true)
-    p.fireStatus:SetPoint("TOPLEFT", 10, -64)
-    p.fireStatus:SetPoint("TOPRIGHT", -10, -64)
+    p.fireStatus:SetPoint("TOPLEFT", 10, -78)
+    p.fireStatus:SetPoint("TOPRIGHT", -10, -78)
     p.fireStatus:SetText("")
 
     p.aura = T:CreateText(p, 11, true)
-    p.aura:SetPoint("TOPLEFT", 10, -84)
-    p.aura:SetPoint("TOPRIGHT", -10, -84)
+    p.aura:SetPoint("TOPLEFT", 10, -96)
+    p.aura:SetPoint("TOPRIGHT", -10, -96)
     p.aura:SetText("")
 
     T:MakeMovable(p, function(point, relPoint, x, y)
