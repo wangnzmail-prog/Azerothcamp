@@ -23,7 +23,7 @@ local M = C:RegisterModule("Camp", {
         { key = "patternWood",  type = "string", default = "木柴",       hidden = true },
         { key = "patternTent",  type = "string", default = "营地帐篷",   hidden = true },
         { key = "patternToy",   type = "string", default = "探险帐篷",   hidden = true },
-        { key = "patternAura",  type = "string", default = "帐篷,营地,休息,Tent,Camp,Rested", hidden = true },
+        { key = "patternAura",  type = "string", default = "帐篷,营地,休息,篝火,火堆,Nearby,Tent,Camp,Rested", hidden = true },
         { key = "point",     type = "string", default = "TOPRIGHT", hidden = true },
         { key = "relPoint",  type = "string", default = "TOPRIGHT", hidden = true },
         { key = "x",         type = "number", default = -20, hidden = true },
@@ -111,7 +111,7 @@ local function Rescan()
     state.kit, state.kitBag, state.kitSlot = ScanBag(kit)
     state.flint = ScanBag(flint)
     state.wood = ScanBag(wood)
-    state.tent, state.tentBag, state.tentSlot = ScanBag(tent)
+    state.tent, state.tentBag, state.tentSlot, state.tentID = ScanBag(tent)
     if not state.recipeID then
         state.recipeID = FindRecipe(kit)
     end
@@ -164,6 +164,12 @@ local function CraftKit()
     end
     if api and api.OpenTradeSkill then
         pcall(api.OpenTradeSkill, (Enum and Enum.SkillLine and Enum.SkillLine.Cooking) or 185)
+        -- 有些客户端要先打开专业窗口，GetAllRecipeIDs 才返回配方；开完再找一次
+        C_Timer.After(1, function()
+            state.recipeID = nil
+            Rescan()
+            Refresh()
+        end)
     end
     return false
 end
@@ -192,24 +198,6 @@ local function ToggleFire()
     end
 end
 
-local function ToggleTent()
-    if state.toyID then
-        local name = state.toyName or ""
-        local ok = pcall(UseItemByName, name)
-        if ok then return end
-        print("|cff69ccf0[露营]|r 玩具无法直接使用，请在玩具箱里点击它。")
-        return
-    end
-
-    if state.tent > 0 then
-        if UseBag(state.tentBag, state.tentSlot) then return end
-        print("|cff69ccf0[露营]|r 无法使用营地帐篷，请手动点击。")
-        return
-    end
-
-    print("|cff69ccf0[露营]|r 没有可用的帐篷（玩具或制皮产品都没有）。")
-end
-
 -- ---------- 界面 ----------
 local function FormatRemain(sec)
     if sec <= 0 then return L("剩余?", "?") end
@@ -229,6 +217,29 @@ local function ApplyLayout()
         tonumber(C:GetSetting("Camp", "y")) or -120)
 end
 M.ApplyLayout = ApplyLayout
+
+-- 帐篷行用安全按钮：玩具只能靠安全属性触发，普通 Lua 调不动
+local function UpdateTentButton()
+    local b = panel and panel.tentBtn
+    if not b then return end
+    if InCombatLockdown and InCombatLockdown() then
+        return -- 战斗中不能改安全属性，等脱战再刷
+    end
+
+    if state.toyID then
+        b:SetAttribute("type", "toy")
+        b:SetAttribute("toy", "item:" .. state.toyID)
+        b:SetAttribute("item", nil)
+    elseif state.tent > 0 and state.tentID then
+        b:SetAttribute("type", "item")
+        b:SetAttribute("item", "item:" .. state.tentID)
+        b:SetAttribute("toy", nil)
+    else
+        b:SetAttribute("type", nil)
+        b:SetAttribute("toy", nil)
+        b:SetAttribute("item", nil)
+    end
+end
 
 local function Refresh()
     if not panel then return end
@@ -276,6 +287,8 @@ local function Refresh()
         end
         panel.aura:SetText(table.concat(parts, "  "))
     end
+
+    UpdateTentButton()
 end
 
 local function CreatePanel()
@@ -305,11 +318,11 @@ local function CreatePanel()
     p.tent:SetPoint("TOPRIGHT", -10, -50)
     p.tent:SetText("")
 
-    local tentBtn = CreateFrame("Button", nil, p)
+    local tentBtn = CreateFrame("Button", nil, p, "SecureActionButtonTemplate")
     tentBtn:SetPoint("TOPLEFT", 6, -46)
     tentBtn:SetPoint("TOPRIGHT", -6, -46)
     tentBtn:SetHeight(18)
-    tentBtn:SetScript("OnClick", function() ToggleTent() end)
+    tentBtn:RegisterForClicks("AnyUp")
     p.tentBtn = tentBtn
 
     p.aura = T:CreateText(p, 11, true)
@@ -343,6 +356,12 @@ local function OnBagDelayed()
     Refresh()
 end
 
+local function OnSkillLinesChanged()
+    state.recipeID = nil
+    Rescan()
+    Refresh()
+end
+
 function M:OnEnable()
     if not panel then
         panel = CreatePanel()
@@ -363,6 +382,8 @@ function M:OnEnable()
 
     C:On("BAG_UPDATE", OnBagUpdate)
     C:On("BAG_UPDATE_DELAYED", OnBagDelayed)
+    C:On("SKILL_LINES_CHANGED", OnSkillLinesChanged)
+    C:On("PLAYER_REGEN_ENABLED", UpdateTentButton)
 end
 
 function M:OnDisable()
@@ -375,6 +396,8 @@ function M:OnDisable()
     end
     C:Off("BAG_UPDATE", OnBagUpdate)
     C:Off("BAG_UPDATE_DELAYED", OnBagDelayed)
+    C:Off("SKILL_LINES_CHANGED", OnSkillLinesChanged)
+    C:Off("PLAYER_REGEN_ENABLED", UpdateTentButton)
 end
 
 function M:OnSettingChanged(key)
