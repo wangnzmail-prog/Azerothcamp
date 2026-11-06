@@ -505,11 +505,31 @@ local function Refresh()
         panel.aura:SetText(table.concat(parts, "  "))
     end
 
+    -- 小队：谁在冷却、谁能放什么
+    if panel.peerLines then
+        local peers = ns.CampPeers or {}
+        local names = {}
+        for name in pairs(peers) do names[#names + 1] = name end
+        table.sort(names)
+        for i = 1, 3 do
+            local fs = panel.peerLines[i]
+            local name = names[i]
+            if name then
+                local info = peers[name]
+                local cd = tonumber(info.cd) or 0
+                local cdText = (cd > 0) and FormatRemain(cd) or L("可用", "ready")
+                fs:SetText(string.format("%s  %s  %s", name, tostring(info.cap or "?"), cdText))
+            else
+                fs:SetText(i == 1 and L("（等队友数据）", "(waiting for party)") or "")
+            end
+        end
+    end
+
     UpdateTentButtons()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 146)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 200)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -576,9 +596,21 @@ local function CreatePanel()
     p.fireStatus:SetPoint("TOPRIGHT", -10, -114)
     p.fireStatus:SetText("")
 
+    p.peerTitle = T:CreateText(p, 10, true)
+    p.peerTitle:SetPoint("TOPLEFT", 10, -148)
+    p.peerTitle:SetText(L("小队露营", "Party camping"))
+
+    p.peerLines = {}
+    for i = 1, 3 do
+        local fs = T:CreateText(p, 10, true)
+        fs:SetPoint("TOPLEFT", 10, -164 - (i - 1) * 14)
+        fs:SetText("")
+        p.peerLines[i] = fs
+    end
+
     p.aura = T:CreateText(p, 11, true)
-    p.aura:SetPoint("TOPLEFT", 10, -130)
-    p.aura:SetPoint("TOPRIGHT", -10, -130)
+    p.aura:SetPoint("TOPLEFT", 10, -208)
+    p.aura:SetPoint("TOPRIGHT", -10, -208)
     p.aura:SetText("")
 
     T:MakeMovable(p, function(point, relPoint, x, y)
