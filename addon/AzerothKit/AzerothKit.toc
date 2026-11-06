@@ -11,7 +11,6 @@
 ## SavedVariables: AzerothKitDB
 ## AddonCompartmentFunc: AzerothKit_Toggle
 ## IconTexture: Interface\Icons\INV_Misc_Map_01
-## Category: Development
 ## DefaultState: enabled
 
 Platform.lua

@@ -1,7 +1,5 @@
-﻿# 依赖与缓存
+# 依赖目录（package.json 保留，用于复现 luaparse 依赖）
 tools/node_modules/
-tools/package-lock.json
-tools/package.json
 
 # 本机 ACL 诊断产物
 _acl-recovery/

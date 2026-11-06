@@ -48,6 +48,16 @@ powershell -ExecutionPolicy Bypass -File D:\ai\wow\tools\check.ps1
 
 改动 `addon/AzerothKit/` 下的文件后，游戏内 `/reload` 即可生效（联接目录，无需重新部署）。
 
+## 已完成验证（2026-11-06）
+
+| 项 | 结果 |
+| --- | --- |
+| `tools/check.ps1` | ✅ 正式服 120105 / 无限 16001 均匹配；4 个 Lua 文件 luaparse 语法检查全通过 |
+| `tools/deploy.ps1` | ✅ `_retail_` 与 `_forever_` 的 `Interface\AddOns\AzerothKit` 均为目录联接（各 5 个文件） |
+| 游戏内加载 | ⏳ 待验证：`/reload` 后在插件列表看到 AzerothKit，跑 `/ak probe` |
+| 时光服 | 未挂载（骨架只声明了 120105 与 16001）；需要时给 TOC 补一个 `38002` 再 `deploy.ps1 -Only titan` |
+
+
 ## 两条最重要的开发结论
 
 1. **不要注册 `COMBAT_LOG_EVENT_UNFILTERED`**。12.0（2026-03-02 上线）起注册它直接抛 Lua 错误；伤害/治疗数据改由官方 `C_DamageMeter` 会话接口提供，且只允许"展示"，不允许基于它做决策逻辑。
