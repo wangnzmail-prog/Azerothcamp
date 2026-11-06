@@ -55,9 +55,17 @@ function D.PrintCamp()
         out("露营模块未注册")
         return
     end
+    local lines = m:ScanReport()
     out("露营扫描:")
-    for _, line in ipairs(m:ScanReport()) do
+    for _, line in ipairs(lines) do
         out("  " .. tostring(line))
+    end
+
+    -- 落盘通道：Agent 读 SavedVariables，比聊天框可靠
+    if ns.db then
+        lines[#lines + 1] = "at " .. date("%Y-%m-%d %H:%M:%S")
+        ns.db.campReport = table.concat(lines, "\n")
+        out("已写入 SavedVariables.campReport（/reload 后 Agent 可读）")
     end
 end
 
