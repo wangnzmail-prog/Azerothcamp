@@ -517,8 +517,33 @@ function M:ScanReport()
         end
     end
 
-    for _, a in ipairs(PlayerAuras()) do
-        add(string.format("  aura %s %s", a.harmful and "debuff" or "buff", a.name))
+    -- 全部光环（不只是匹配到的）：便于定位营火/帐篷光环的真实名字与 spellId
+    local api = C_UnitAuras
+    if api and api.GetAuraDataByIndex then
+        for _, filter in ipairs({ "HELPFUL", "HARMFUL" }) do
+            local kind = (filter == "HELPFUL") and "buff" or "debuff"
+            for i = 1, 60 do
+                local ok, data = pcall(api.GetAuraDataByIndex, "player", i, filter)
+                if not ok or not data then break end
+                local okText, text = pcall(function()
+                    return string.format("  %s id=%s  %s", kind,
+                        tostring(data.spellId), tostring(data.name))
+                end)
+                if okText then
+                    add(text)
+                else
+                    add("  " .. kind .. " (secret)")
+                end
+            end
+        end
+    end
+
+    if state.toyID and C_Item and C_Item.GetItemCooldown then
+        local okCd, start, duration = pcall(C_Item.GetItemCooldown, state.toyID)
+        if okCd then
+            add(string.format("  toy cooldown start=%s duration=%s",
+                tostring(start), tostring(duration)))
+        end
     end
 
     return lines
