@@ -86,3 +86,31 @@ function T:CreateDivider(parent, y)
     d:SetPoint("TOPRIGHT", -self.padding, y)
     return d
 end
+
+-- 位置：所有模块/面板共用同一套约定，位置以扁平字段存进模块设置，
+-- 这样 Profile（Agent 写入）与 /ak export 都能带得走。
+function T:RestorePosition(frame, point, relPoint, x, y)
+    frame:ClearAllPoints()
+    point = point or "TOP"
+    relPoint = relPoint or point
+    frame:SetPoint(point, UIParent, relPoint, x or 0, y or 0)
+end
+
+-- 拖动：调用方负责把新坐标写回自己的设置（onDragStop 回调）
+function T:MakeMovable(frame, onDragStop)
+    frame:SetMovable(true)
+    frame:SetClampedToScreen(true)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", function(self)
+        if self.akLocked then return end
+        self:StartMoving()
+    end)
+    frame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local point, _, relPoint, x, y = self:GetPoint()
+        if onDragStop then
+            onDragStop(point, relPoint, x, y)
+        end
+    end)
+end

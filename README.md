@@ -60,6 +60,7 @@ powershell -ExecutionPolicy Bypass -File D:\ai\wow\tools\check.ps1
 | 0.2.0 模块化内核 | ✅ Theme（主题控件）+ Core（事件总线/模块注册器/DB）+ UI（模块开关）+ Infobar 示例模块，语法校验通过 |
 | 0.3.0 Agent 写入口 | ✅ `Profile.lua` + `tools/ak-config.ps1`：JSON 生成配置（版本自增）、`/ak export` 导出状态，链路已跑通 |
 | 0.4.0 第三方整合 | ✅ `Integrations/` 框架 + Details 适配器（检测/版本/窗口数/皮肤、窗口缩放）；`check.ps1` 增加 BOM 检测 |
+| 0.5.0 拖动布局 | ✅ 信息条可拖动、松手自动存坐标（`/ak reset` 复位）；位置为扁平字段，Profile 与导出都能带 |
 | 游戏内加载 | ⏳ 待验证：`/reload` 后在插件列表看到 AzerothKit，`/ak` 打开面板、勾选模块 |
 | 时光服 | 未挂载（骨架只声明了 120105 与 16001）；需要时给 TOC 补一个 `38002` 再 `deploy.ps1 -Only titan` |
 

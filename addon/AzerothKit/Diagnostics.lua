@@ -16,7 +16,7 @@ end
 
 function D.PrintVersion()
     local order = C:GetModules()
-    out(string.format("v0.4.0 · %s · build %s · Interface %d · 模块 %d 个",
+    out(string.format("v0.5.0 · %s · build %s · Interface %d · 模块 %d 个",
         P.GetFlavorLabel(), tostring(P.build), P.toc, #order))
 end
 
@@ -55,12 +55,14 @@ function D.PrintSchema()
     for _, name in ipairs(order) do
         local m = modules[name]
         for _, s in ipairs(m.settings) do
-            local range = ""
-            if s.min or s.max then
-                range = string.format("  [%s..%s]", tostring(s.min), tostring(s.max))
+            if not s.hidden then
+                local range = ""
+                if s.min or s.max then
+                    range = string.format("  [%s..%s]", tostring(s.min), tostring(s.max))
+                end
+                out(string.format("  %s.%s  %s  default=%s%s",
+                    name, s.key, tostring(s.type or "any"), tostring(s.default), range))
             end
-            out(string.format("  %s.%s  %s  default=%s%s",
-                name, s.key, tostring(s.type or "any"), tostring(s.default), range))
         end
     end
 
@@ -72,6 +74,27 @@ function D.PrintSchema()
                 name, s.key, tostring(s.type or "any"), tostring(s.default)))
         end
     end
+end
+
+-- 把所有模块的位置字段清掉并立即重排（不用 /reload）
+function D.ResetPositions()
+    if not ns.db then
+        out("数据库尚未加载")
+        return
+    end
+    local order, modules = C:GetModules()
+    for _, name in ipairs(order) do
+        local store = ns.db.modules and ns.db.modules[name]
+        if type(store) == "table" then
+            store.point, store.relPoint, store.x, store.y = nil, nil, nil, nil
+        end
+        local m = modules[name]
+        if m and m.ApplyLayout then
+            pcall(m.ApplyLayout, m)
+        end
+    end
+    ns.db.pos = nil
+    out("已重置所有模块位置")
 end
 
 function D.ExportProfile()
@@ -152,6 +175,7 @@ local function PrintHelp()
     out("  /ak schema       可调项 schema（Agent 与面板共用）")
     out("  /ak export       导出当前配置到 SavedVariables，供 Agent 读取")
     out("  /ak toggle <名>  开关某个模块")
+    out("  /ak reset        重置所有模块位置（不用 /reload）")
     out("  /ak secret       机密值体检（战斗中跑一次）")
 end
 
@@ -175,6 +199,8 @@ local function Handle(msg)
         D.ExportProfile()
     elseif cmd == "toggle" then
         D.ToggleModule(rest)
+    elseif cmd == "reset" then
+        D.ResetPositions()
     elseif cmd == "secret" then
         D.PrintSecret()
     else

@@ -10,9 +10,9 @@ AzerothKitProfile = {
     modules = {
         Infobar = {
             enabled = true,
-            offsetY = -8,
+            locked = false,
             scale = 1.1,
         },
     },
-    version = 4,
+    version = 6,
 }

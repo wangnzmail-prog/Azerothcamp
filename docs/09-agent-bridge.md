@@ -85,6 +85,8 @@ AzerothKitProfile = {
 
 **版本化覆盖语义**：只有 `version > AzerothKitDB.appliedProfile` 时才覆盖，避免每次登录冲掉玩家刚在游戏里调好的值。Agent 每次生成都自增版本，玩家手动改的值保持"最后写入者获胜"。
 
+**位置字段例外**：`point / relPoint / x / y` 4 个扁平字段由游戏内拖拽产生，**默认不写进 Profile**——否则每次 Agent 部署配置都会把玩家拖好的位置拽回默认值。Agent 想固定布局时再显式写入；`/ak export` 会把当前位置原样带回。
+
 生成命令（已实现）：
 
 ```powershell
