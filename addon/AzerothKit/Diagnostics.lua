@@ -1,4 +1,4 @@
--- Diagnostics.lua · /ak 命令与探针
+-- Diagnostics.lua · /ak 命令、探针、配置导出
 local ADDON, ns = ...
 local P = ns.Platform
 local C = ns.Core
@@ -16,7 +16,7 @@ end
 
 function D.PrintVersion()
     local order = C:GetModules()
-    out(string.format("v0.2.0 · %s · build %s · Interface %d · 模块 %d 个",
+    out(string.format("v0.3.0 · %s · build %s · Interface %d · 模块 %d 个",
         P.GetFlavorLabel(), tostring(P.build), P.toc, #order))
 end
 
@@ -29,6 +29,36 @@ function D.PrintModules()
         local note = C:IsModuleSupported(name) and "" or " |cffff4040(当前客户端不支持)|r"
         out(string.format("  %-12s %s%s", name, state, note))
     end
+end
+
+function D.PrintSchema()
+    local order, modules = C:GetModules()
+    out("可调项 schema:")
+    for _, name in ipairs(order) do
+        local m = modules[name]
+        if #m.settings > 0 then
+            for _, s in ipairs(m.settings) do
+                local range = ""
+                if s.min or s.max then
+                    range = string.format("  range=[%s..%s]", tostring(s.min), tostring(s.max))
+                end
+                out(string.format("  %s.%s  %s  default=%s%s",
+                    name, s.key, tostring(s.type or "any"), tostring(s.default), range))
+            end
+        end
+    end
+end
+
+function D.ExportProfile()
+    if not ns.db then
+        out("数据库尚未加载")
+        return
+    end
+    local profile = C:ExportProfile()
+    local text = C.Serialize(profile)
+    ns.db.exportText = text
+    out(string.format("已导出配置（%d 字节）到 SavedVariables.exportText", #text))
+    out("下一步：/reload 落盘 → Agent 读取 WTF\\...\\SavedVariables\\AzerothKit.lua")
 end
 
 function D.ToggleModule(name)
@@ -63,6 +93,7 @@ function D.PrintProbe()
         out(string.format("  [%s] %s", mark, cap.label))
     end
     D.PrintModules()
+    out(string.format("已应用配置档案版本: %s", tostring(ns.db and ns.db.appliedProfile or 0)))
 end
 
 -- 机密值体检：只打印"是否机密"和"能否做算术"，绝不打印 secret 本身。
@@ -89,19 +120,19 @@ end
 local function PrintHelp()
     out("命令:")
     out("  /ak              开关面板")
-    out("  /ak version      版本与 Interface")
-    out("  /ak probe        完整能力矩阵 + 模块状态")
+    out("  /ak probe        能力矩阵 + 模块状态 + 档案版本")
     out("  /ak modules      模块列表")
+    out("  /ak schema       可调项 schema（Agent 与面板共用）")
+    out("  /ak export       导出当前配置到 SavedVariables，供 Agent 读取")
     out("  /ak toggle <名>  开关某个模块")
     out("  /ak secret       机密值体检（战斗中跑一次）")
-    out("  /ak cleu         关于战斗日志的警告")
 end
 
 local function Handle(msg)
     local cmd, rest = (msg or ""):match("^%s*(%S*)%s*(.-)%s*$")
     cmd = string.lower(cmd or "")
 
-    if cmd == "" or cmd == "ui" or cmd == "toggle_ui" then
+    if cmd == "" or cmd == "ui" then
         ns.ToggleMainFrame()
     elseif cmd == "version" then
         D.PrintVersion()
@@ -109,13 +140,14 @@ local function Handle(msg)
         D.PrintProbe()
     elseif cmd == "modules" then
         D.PrintModules()
+    elseif cmd == "schema" then
+        D.PrintSchema()
+    elseif cmd == "export" then
+        D.ExportProfile()
     elseif cmd == "toggle" then
         D.ToggleModule(rest)
     elseif cmd == "secret" then
         D.PrintSecret()
-    elseif cmd == "cleu" then
-        out("12.0 起注册 COMBAT_LOG_EVENT(_UNFILTERED) 会直接抛 Lua 错误；")
-        out("伤害数据请改用 C_DamageMeter 的会话接口，且只做展示。")
     else
         PrintHelp()
     end

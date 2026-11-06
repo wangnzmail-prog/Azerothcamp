@@ -1,13 +1,13 @@
-# AzerothKit · 双版本插件骨架（0.2.0：模块化内核）
+# AzerothKit · 双版本模块化插件骨架（0.3.0：Agent 可写配置）
 # 同时服务 正式服 12.1.5 (120105) 与 无限 1.60.1 (16001)
 # 客户端小版本更新后记得同步这里的 Interface，或改用 tools/check.ps1 检查
 ## Interface: 120105, 16001
 ## Title: AzerothKit
 ## Title-zhCN: 艾泽拉斯工具箱
-## Notes: Modular addon suite skeleton for Retail and WoW Forever
-## Notes-zhCN: 正式服与无限双版本模块化插件骨架
+## Notes: Modular addon suite skeleton with an agent-writable profile
+## Notes-zhCN: 正式服与无限双版本模块化插件骨架（支持 Agent 写配置）
 ## Author: DSH
-## Version: 0.2.0-1
+## Version: 0.3.0-1
 ## SavedVariables: AzerothKitDB
 ## AddonCompartmentFunc: AzerothKit_Toggle
 ## IconTexture: Interface\Icons\INV_Misc_Map_01
@@ -16,6 +16,7 @@
 Platform.lua
 Theme.lua
 Core.lua
+Profile.lua
 UI.lua
 Diagnostics.lua
 Modules\Infobar.lua

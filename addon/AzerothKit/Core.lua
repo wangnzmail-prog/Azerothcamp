@@ -1,4 +1,4 @@
--- Core.lua · 生命周期、数据库、事件总线、模块注册器
+-- Core.lua · 数据库 / 事件总线 / 模块注册器 / 设置 schema / Profile 部署
 local ADDON, ns = ...
 local P = ns.Platform
 
@@ -7,10 +7,12 @@ ns.Core = C
 
 -- ---------- 数据库 ----------
 local DB_DEFAULTS = {
-    schema = 1,
+    schema = 2,
     showOnLogin = true,
     modules = {},
     pos = nil,
+    appliedProfile = 0,
+    exportText = nil,
 }
 
 local function CopyDefaults(target, defaults)
@@ -26,9 +28,28 @@ end
 
 local function Migrate(db)
     db.schema = db.schema or 0
-    if db.schema < 1 then
-        db.schema = 1
+
+    -- schema 1: modules[name] = true/false
+    -- schema 2: modules[name] = { enabled = true/false, <settingKey> = value }
+    if db.schema < 2 then
+        local mods = db.modules or {}
+        for name, v in pairs(mods) do
+            if type(v) ~= "table" then
+                mods[name] = { enabled = v and true or false }
+            end
+        end
+        db.modules = mods
+        db.schema = 2
     end
+end
+
+local function Store(name)
+    local store = ns.db and ns.db.modules[name]
+    if type(store) ~= "table" then
+        store = {}
+        if ns.db then ns.db.modules[name] = store end
+    end
+    return store
 end
 
 -- ---------- 模块注册器 ----------
@@ -43,6 +64,7 @@ function C:RegisterModule(name, def)
     def.label = def.label or name
     def.defaultEnabled = def.defaultEnabled ~= false
     def.flavors = def.flavors or { retail = true, forever = true }
+    def.settings = def.settings or {}
     modules[name] = def
     order[#order + 1] = name
     return def
@@ -66,7 +88,8 @@ function C:IsModuleEnabled(name)
     local m = modules[name]
     if not m then return false end
     if not self:IsModuleSupported(name) then return false end
-    local saved = ns.db and ns.db.modules and ns.db.modules[name]
+    local store = ns.db and ns.db.modules and ns.db.modules[name]
+    local saved = type(store) == "table" and store.enabled or nil
     if saved == nil then return m.defaultEnabled end
     return saved and true or false
 end
@@ -74,7 +97,7 @@ end
 function C:SetModuleEnabled(name, enabled)
     local m = modules[name]
     if not m or not ns.db then return end
-    ns.db.modules[name] = enabled and true or false
+    Store(name).enabled = enabled and true or false
 
     if not self:IsModuleSupported(name) then return end
     local handler = enabled and m.OnEnable or m.OnDisable
@@ -96,6 +119,117 @@ function C:ApplyModules()
             end
         end
     end
+end
+
+-- ---------- 设置 schema ----------
+-- 模块用 settings = { { key, type, default, min, max, step, label, enum } } 声明可调项，
+-- Agent 与游戏内面板都以它为唯一事实来源。
+
+function C:FindSetting(moduleName, key)
+    local m = modules[moduleName]
+    if not m then return nil end
+    for _, s in ipairs(m.settings) do
+        if s.key == key then return s end
+    end
+    return nil
+end
+
+function C:GetSetting(moduleName, key)
+    local store = ns.db and ns.db.modules and ns.db.modules[moduleName]
+    if type(store) == "table" and store[key] ~= nil then
+        return store[key]
+    end
+    local s = self:FindSetting(moduleName, key)
+    return s and s.default
+end
+
+function C:SetSetting(moduleName, key, value)
+    if not ns.db then return end
+    Store(moduleName)[key] = value
+    local m = modules[moduleName]
+    if m and m.OnSettingChanged then
+        local ok, err = pcall(m.OnSettingChanged, m, key, value)
+        if not ok then
+            print("|cffff4040[AzerothKit]|r " .. moduleName .. "." .. key .. ": " .. tostring(err))
+        end
+    end
+end
+
+-- ---------- Profile：Agent 的写入口 ----------
+-- 文件：Profile.lua（固定文件名，永远在 TOC 里）
+-- 结构：AzerothKitProfile = { version = N, modules = { [name] = { enabled=..., <key>=... } } }
+-- 语义：version 变了才覆盖，避免每次登录冲掉玩家的手动改动。
+
+function C:ApplyProfile(profile)
+    if type(profile) ~= "table" or type(profile.modules) ~= "table" then return 0 end
+    local count = 0
+    for name, values in pairs(profile.modules) do
+        if type(values) == "table" then
+            local store = Store(name)
+            for k, v in pairs(values) do
+                if type(v) ~= "table" and type(v) ~= "function" then
+                    store[k] = v
+                    count = count + 1
+                end
+            end
+        end
+    end
+    ns.db.appliedProfile = tonumber(profile.version) or 0
+    return count
+end
+
+function C:SyncProfile()
+    if not ns.db then return 0 end
+    local profile = AzerothKitProfile
+    if type(profile) ~= "table" then return 0 end
+    local incoming = tonumber(profile.version) or 0
+    if incoming <= (tonumber(ns.db.appliedProfile) or 0) then return 0 end
+    local n = self:ApplyProfile(profile)
+    print(string.format("|cff69ccf0[AzerothKit]|r 已应用配置档案 v%d（%d 项）", incoming, n))
+    return n
+end
+
+-- ---------- 导出（给 Agent 读） ----------
+local function Serialize(value, indent)
+    indent = indent or ""
+    local t = type(value)
+    if t == "string" then
+        return string.format("%q", value)
+    elseif t == "number" or t == "boolean" then
+        return tostring(value)
+    elseif t == "table" then
+        local inner = indent .. "    "
+        local parts = {}
+        for k, v in pairs(value) do
+            local key
+            if type(k) == "string" and k:match("^[%a_][%w_]*$") then
+                key = k
+            else
+                key = "[" .. Serialize(k) .. "]"
+            end
+            parts[#parts + 1] = inner .. key .. " = " .. Serialize(v, inner)
+        end
+        if #parts == 0 then return "{}" end
+        return "{\n" .. table.concat(parts, ",\n") .. "\n" .. indent .. "}"
+    end
+    return "nil"
+end
+C.Serialize = Serialize
+
+function C:ExportProfile()
+    local out = { version = (tonumber(ns.db.appliedProfile) or 0) + 1, modules = {} }
+    for name, store in pairs(ns.db.modules or {}) do
+        if type(store) == "table" then
+            local copy = {}
+            for k, v in pairs(store) do
+                if type(v) ~= "table" and type(v) ~= "function" then
+                    copy[k] = v
+                end
+            end
+            out.modules[name] = copy
+        end
+    end
+    return out
 end
 
 -- ---------- 事件总线 ----------
@@ -142,6 +276,7 @@ boot:SetScript("OnEvent", function(self, event, arg1)
         self:UnregisterEvent("ADDON_LOADED")
 
     elseif event == "PLAYER_LOGIN" then
+        C:SyncProfile()
         C:ApplyModules()
         if ns.db.showOnLogin and ns.Diagnostics then
             ns.Diagnostics.PrintVersion()
