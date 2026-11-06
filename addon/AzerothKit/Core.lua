@@ -6,7 +6,7 @@ local C = {}
 ns.Core = C
 
 -- Lua 层版本号：/reload 就能反映真实代码版本（TOC 的 ## Version 要重启客户端才更新）
-ns.VERSION = "0.9.0"
+ns.VERSION = "0.9.1"
 
 -- ---------- 数据库 ----------
 local DB_DEFAULTS = {
@@ -395,6 +395,10 @@ boot:SetScript("OnEvent", function(self, event, arg1)
         self:UnregisterEvent("ADDON_LOADED")
 
     elseif event == "PLAYER_LOGIN" then
+        -- 清理已移除模块（如 Infobar）遗留的配置
+        for name in pairs(ns.db.modules or {}) do
+            if not modules[name] then ns.db.modules[name] = nil end
+        end
         C:SyncProfile()
         C:ApplyModules()
         C:ApplyIntegrations()
