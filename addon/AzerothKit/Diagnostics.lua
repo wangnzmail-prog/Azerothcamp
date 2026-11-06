@@ -16,8 +16,8 @@ end
 
 function D.PrintVersion()
     local order = C:GetModules()
-    out(string.format("v0.6.7 · %s · build %s · Interface %d · 模块 %d 个",
-        P.GetFlavorLabel(), tostring(P.build), P.toc, #order))
+    out(string.format("v%s · %s · build %s · Interface %d · 模块 %d 个",
+        tostring(ns.VERSION), P.GetFlavorLabel(), tostring(P.build), P.toc, #order))
 end
 
 function D.PrintModules()

@@ -25,6 +25,7 @@ local M = C:RegisterModule("Camp", {
         { key = "patternTent",  type = "string", default = "营地帐篷",   hidden = true },
         { key = "patternToy",   type = "string", default = "探险帐篷",   hidden = true },
         { key = "patternAura",  type = "string", default = "帐篷,营地,休息,篝火,火堆,Nearby,Tent,Camp,Rested", hidden = true },
+        { key = "auraIDs",      type = "string", default = "1229451,1229741", hidden = true },
         { key = "patternFireAura", type = "string", default = "营火,篝火,Campfire,Fire", hidden = true },
         { key = "campfireIDs", type = "string", default = "1229739,1283391", hidden = true },
         { key = "point",     type = "string", default = "TOPRIGHT", hidden = true },
@@ -46,6 +47,23 @@ local state = {
     fireAuraID = nil,   -- 附近营火的光环 spellId
     tentReady = false,  -- 有帐篷 + 附近有营火 + 不在冷却
 }
+
+local function Needles(pattern)
+    local list = {}
+    for piece in (pattern or ""):gmatch("[^,]+") do
+        local p = piece:match("^%s*(.-)%s*$")
+        if p ~= "" then list[#list + 1] = p end
+    end
+    return list
+end
+
+local function ParseIDs(text)
+    local list = {}
+    for piece in (text or ""):gmatch("%d+") do
+        list[#list + 1] = tonumber(piece)
+    end
+    return list
+end
 
 -- ---------- 查询 ----------
 local function ItemName(itemID)
@@ -129,50 +147,35 @@ local function PlayerAuras()
     local api = C_UnitAuras
     if not api or not api.GetAuraDataByIndex then return list end
     local pattern = C:GetSetting("Camp", "patternAura") or ""
-    local needles = {}
-    for piece in pattern:gmatch("[^,]+") do
-        needles[#needles + 1] = piece
+    local needles = Needles(pattern)
+    local idSet = {}
+    for _, id in ipairs(ParseIDs(C:GetSetting("Camp", "auraIDs"))) do
+        idSet[id] = true
     end
 
     for _, filter in ipairs({ "HELPFUL", "HARMFUL" }) do
         for i = 1, 40 do
             local ok, data = pcall(api.GetAuraDataByIndex, "player", i, filter)
             if not ok or not data then break end
+            local sid = data.spellId
             local name = data.name
-            if name then
-                local hit = false
+            local hit = (sid ~= nil and not ns.Platform.IsSecret(sid) and idSet[sid] == true) or false
+            if not hit and name then
                 for _, needle in ipairs(needles) do
                     if name:find(needle, 1, true) then hit = true break end
                 end
-                if hit then
-                    local remain = (data.expirationTime or 0) - GetTime()
-                    list[#list + 1] = { name = name, remain = remain, harmful = filter == "HARMFUL" }
-                end
+            end
+            if hit and name then
+                local remain = (data.expirationTime or 0) - GetTime()
+                list[#list + 1] = { name = name, remain = remain, harmful = filter == "HARMFUL" }
             end
         end
     end
     return list
 end
 
-local function Needles(pattern)
-    local list = {}
-    for piece in (pattern or ""):gmatch("[^,]+") do
-        local p = piece:match("^%s*(.-)%s*$")
-        if p ~= "" then list[#list + 1] = p end
-    end
-    return list
-end
-
 -- 附近营火：帐篷的前置条件
 -- 实测 1.60.1：温馨营火 1229739 / 营火在附近 1283391（ID 优先，名字兜底）
-local function ParseIDs(text)
-    local list = {}
-    for piece in (text or ""):gmatch("%d+") do
-        list[#list + 1] = tonumber(piece)
-    end
-    return list
-end
-
 local function ScanFireAura()
     local api = C_UnitAuras
     if not api or not api.GetAuraDataByIndex then return nil end
@@ -544,7 +547,7 @@ function M:ScanReport()
     local lines = {}
     local function add(text) lines[#lines + 1] = text end
 
-    add("AzerothKit " .. tostring(ns.db and ns.db.addonVersion or "?"))
+    add("AzerothKit " .. tostring(ns.VERSION or "?"))
     add(string.format("%s: %d  %s: %d  %s: %d  %s: %d",
         "kit", state.kit, "flint", state.flint, "wood", state.wood, "tent", state.tent))
     add(string.format("recipe=%s  toy=%s(%s)",

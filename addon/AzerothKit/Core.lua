@@ -5,6 +5,9 @@ local P = ns.Platform
 local C = {}
 ns.Core = C
 
+-- Lua 层版本号：/reload 就能反映真实代码版本（TOC 的 ## Version 要重启客户端才更新）
+ns.VERSION = "0.6.8"
+
 -- ---------- 数据库 ----------
 local DB_DEFAULTS = {
     schema = 2,
@@ -382,11 +385,12 @@ boot:SetScript("OnEvent", function(self, event, arg1)
         CopyDefaults(AzerothKitDB, DB_DEFAULTS)
         ns.db = AzerothKitDB
 
-        -- 版本戳：便于从 SavedVariables 确认客户端实际加载的是哪一版
+        -- 版本戳：优先用 Lua 常量（/reload 即准），TOC 元数据只作兜底
+        ns.db.addonVersion = ns.VERSION
         if C_AddOns and C_AddOns.GetAddOnMetadata then
-            ns.db.addonVersion = C_AddOns.GetAddOnMetadata(ADDON, "Version") or "?"
+            ns.db.addonTocVersion = C_AddOns.GetAddOnMetadata(ADDON, "Version") or "?"
         elseif type(GetAddOnMetadata) == "function" then
-            ns.db.addonVersion = GetAddOnMetadata(ADDON, "Version") or "?"
+            ns.db.addonTocVersion = GetAddOnMetadata(ADDON, "Version") or "?"
         end
         self:UnregisterEvent("ADDON_LOADED")
 
