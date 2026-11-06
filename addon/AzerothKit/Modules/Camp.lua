@@ -722,3 +722,13 @@ function M:ScanReport()
 
     return lines
 end
+
+-- 给小队同步用的对外信息：个人冷却剩余 + 当前最能放的营地制品
+function M:GetBroadcastInfo()
+    local cd = SharedCooldown()
+    local cap = "none"
+    if state.toyID then cap = "toy"
+    elseif state.tent > 0 then cap = "craft"
+    elseif state.aid > 0 then cap = "aid" end
+    return cd, cap
+end
