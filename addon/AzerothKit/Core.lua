@@ -381,6 +381,13 @@ boot:SetScript("OnEvent", function(self, event, arg1)
         Migrate(AzerothKitDB)
         CopyDefaults(AzerothKitDB, DB_DEFAULTS)
         ns.db = AzerothKitDB
+
+        -- 版本戳：便于从 SavedVariables 确认客户端实际加载的是哪一版
+        if C_AddOns and C_AddOns.GetAddOnMetadata then
+            ns.db.addonVersion = C_AddOns.GetAddOnMetadata(ADDON, "Version") or "?"
+        elseif type(GetAddOnMetadata) == "function" then
+            ns.db.addonVersion = GetAddOnMetadata(ADDON, "Version") or "?"
+        end
         self:UnregisterEvent("ADDON_LOADED")
 
     elseif event == "PLAYER_LOGIN" then

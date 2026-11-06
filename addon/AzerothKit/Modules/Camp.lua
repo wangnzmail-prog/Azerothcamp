@@ -539,6 +539,7 @@ function M:ScanReport()
     local lines = {}
     local function add(text) lines[#lines + 1] = text end
 
+    add("AzerothKit " .. tostring(ns.db and ns.db.addonVersion or "?"))
     add(string.format("%s: %d  %s: %d  %s: %d  %s: %d",
         "kit", state.kit, "flint", state.flint, "wood", state.wood, "tent", state.tent))
     add(string.format("recipe=%s  toy=%s(%s)",
