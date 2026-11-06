@@ -18,6 +18,7 @@
 | `docs/07-ndui-details-anatomy.md` | NDui/Details 结构解剖、替代可行性矩阵、自研路线 |
 | `docs/08-suite-blueprint.md` | 自研套件蓝图：分层、模块预算与工期、统计面板设计、迁移策略 |
 | `docs/09-agent-bridge.md` | Agent 接入：Schema / Profile / Export 三件套、文件通道、整合层设计 |
+| `docs/10-forever-camping-ids.md` | 无限露营系统实测 ID（物品/玩具/营火光环）与门禁规则 |
 | `addon/AzerothKit/` | 可直接加载的双版本示例插件（0.1.0） |
 | `tools/deploy.ps1` | 把示例插件以目录联接方式挂进两个客户端 |
 | `tools/check.ps1` | 校验 TOC Interface 与本机客户端版本是否匹配 |

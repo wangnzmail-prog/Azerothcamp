@@ -25,6 +25,7 @@ local M = C:RegisterModule("Camp", {
         { key = "patternToy",   type = "string", default = "探险帐篷",   hidden = true },
         { key = "patternAura",  type = "string", default = "帐篷,营地,休息,篝火,火堆,Nearby,Tent,Camp,Rested", hidden = true },
         { key = "patternFireAura", type = "string", default = "营火,篝火,Campfire,Fire", hidden = true },
+        { key = "campfireIDs", type = "string", default = "1229739,1283391", hidden = true },
         { key = "point",     type = "string", default = "TOPRIGHT", hidden = true },
         { key = "relPoint",  type = "string", default = "TOPRIGHT", hidden = true },
         { key = "x",         type = "number", default = -20, hidden = true },
@@ -41,6 +42,7 @@ local state = {
     toyID = nil, toyName = nil,
     recipeID = nil,
     fireAura = nil,     -- 附近营火的光环名
+    fireAuraID = nil,   -- 附近营火的光环 spellId
     tentReady = false,  -- 有帐篷 + 附近有营火 + 不在冷却
 }
 
@@ -161,25 +163,60 @@ local function Needles(pattern)
 end
 
 -- 附近营火：帐篷的前置条件
+-- 实测 1.60.1：温馨营火 1229739 / 营火在附近 1283391（ID 优先，名字兜底）
+local function ParseIDs(text)
+    local list = {}
+    for piece in (text or ""):gmatch("%d+") do
+        list[#list + 1] = tonumber(piece)
+    end
+    return list
+end
+
 local function ScanFireAura()
     local api = C_UnitAuras
     if not api or not api.GetAuraDataByIndex then return nil end
+
+    local idSet = {}
+    for _, id in ipairs(ParseIDs(C:GetSetting("Camp", "campfireIDs"))) do
+        idSet[id] = true
+    end
     local needles = Needles(C:GetSetting("Camp", "patternFireAura"))
-    if #needles == 0 then return nil end
+    if not next(idSet) and #needles == 0 then return nil end
 
     for _, filter in ipairs({ "HELPFUL", "HARMFUL" }) do
         for i = 1, 40 do
             local ok, data = pcall(api.GetAuraDataByIndex, "player", i, filter)
             if not ok or not data then break end
+
+            local sid = data.spellId
+            if sid and not ns.Platform.IsSecret(sid) and idSet[sid] then
+                return data.name, sid
+            end
+
             local name = data.name
             if name then
                 for _, n in ipairs(needles) do
-                    if name:find(n, 1, true) then return name end
+                    if name:find(n, 1, true) then
+                        return name, sid
+                    end
                 end
             end
         end
     end
     return nil
+end
+
+-- 营火工具包自身的冷却（实测 5 分钟）
+local function KitCooldown()
+    if not (state.kitBag and state.kitSlot and C_Container.GetContainerItemCooldown) then
+        return 0
+    end
+    local start, duration = C_Container.GetContainerItemCooldown(state.kitBag, state.kitSlot)
+    if start and duration and duration > 0 then
+        local remain = (start + duration) - GetTime()
+        if remain > 0 then return remain end
+    end
+    return 0
 end
 
 -- 帐篷冷却（玩具 1 小时 / 制皮帐篷同）
@@ -255,10 +292,13 @@ end
 
 -- ---------- 界面 ----------
 local function FormatRemain(sec)
-    if sec <= 0 then return L("剩余?", "?") end
-    if sec >= 3600 then return string.format("%dh", math.floor(sec / 3600)) end
-    if sec >= 60 then return string.format("%dm", math.floor(sec / 60)) end
-    return string.format("%ds", math.floor(sec))
+    if not sec or sec <= 0 then return L("剩余?", "?") end
+    sec = math.floor(sec + 0.5)
+    if sec >= 3600 then
+        return string.format("%d:%02d:%02d", math.floor(sec / 3600),
+            math.floor((sec % 3600) / 60), sec % 60)
+    end
+    return string.format("%d:%02d", math.floor(sec / 60), sec % 60)
 end
 
 local function ApplyLayout()
@@ -299,7 +339,7 @@ end
 local function Refresh()
     if not panel then return end
 
-    state.fireAura = ScanFireAura()
+    state.fireAura, state.fireAuraID = ScanFireAura()
 
     -- 营火行
     local fireText, fireColor
@@ -312,6 +352,10 @@ local function Refresh()
     else
         fireText = "|cff606060" .. L("无营火材料", "No fire kit") .. "|r"
         fireColor = { 0.5, 0.5, 0.5 }
+    end
+    local kitCd = (state.kit > 0) and KitCooldown() or 0
+    if kitCd > 0 then
+        fireText = fireText .. "  |cff606060" .. FormatRemain(kitCd) .. "|r"
     end
     panel.fire:SetText(fireText)
     panel.fire:SetTextColor(fireColor[1], fireColor[2], fireColor[3])
@@ -499,8 +543,9 @@ function M:ScanReport()
         "kit", state.kit, "flint", state.flint, "wood", state.wood, "tent", state.tent))
     add(string.format("recipe=%s  toy=%s(%s)",
         tostring(state.recipeID), tostring(state.toyID), tostring(state.toyName)))
-    add(string.format("fireAura=%s  tentReady=%s  cooldown=%s",
-        tostring(state.fireAura), tostring(state.tentReady), tostring(math.floor(TentCooldown()))))
+    add(string.format("fireAura=%s(%s)  tentReady=%s  tentCd=%s  kitCd=%s",
+        tostring(state.fireAura), tostring(state.fireAuraID), tostring(state.tentReady),
+        tostring(math.floor(TentCooldown())), tostring(math.floor(KitCooldown()))))
 
     for bag = 0, (NUM_BAG_SLOTS or 4) do
         local slots = C_Container.GetContainerNumSlots(bag) or 0
