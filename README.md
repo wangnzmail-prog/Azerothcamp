@@ -16,6 +16,7 @@
 | `docs/05-toolchain-and-workflow.md` | 本机工具链、部署脚本、调试命令、打包发布 |
 | `docs/06-roadmap-and-checklist.md` | 分阶段路线图、验证清单、待确认问题 |
 | `docs/07-ndui-details-anatomy.md` | NDui/Details 结构解剖、替代可行性矩阵、自研路线 |
+| `docs/08-suite-blueprint.md` | 自研套件蓝图：分层、模块预算与工期、统计面板设计、迁移策略 |
 | `addon/AzerothKit/` | 可直接加载的双版本示例插件（0.1.0） |
 | `tools/deploy.ps1` | 把示例插件以目录联接方式挂进两个客户端 |
 | `tools/check.ps1` | 校验 TOC Interface 与本机客户端版本是否匹配 |
@@ -53,9 +54,10 @@ powershell -ExecutionPolicy Bypass -File D:\ai\wow\tools\check.ps1
 
 | 项 | 结果 |
 | --- | --- |
-| `tools/check.ps1` | ✅ 正式服 120105 / 无限 16001 均匹配；4 个 Lua 文件 luaparse 语法检查全通过 |
-| `tools/deploy.ps1` | ✅ `_retail_` 与 `_forever_` 的 `Interface\AddOns\AzerothKit` 均为目录联接（各 5 个文件） |
-| 游戏内加载 | ⏳ 待验证：`/reload` 后在插件列表看到 AzerothKit，跑 `/ak probe` |
+| `tools/check.ps1` | ✅ 正式服 120105 / 无限 16001 均匹配；6 个 Lua 文件 luaparse 语法检查全通过 |
+| `tools/deploy.ps1` | ✅ `_retail_` 与 `_forever_` 的 `Interface\AddOns\AzerothKit` 均为目录联接 |
+| 0.2.0 模块化内核 | ✅ Theme（主题控件）+ Core（事件总线/模块注册器/DB）+ UI（模块开关）+ Infobar 示例模块，语法校验通过 |
+| 游戏内加载 | ⏳ 待验证：`/reload` 后在插件列表看到 AzerothKit，`/ak` 打开面板、勾选模块 |
 | 时光服 | 未挂载（骨架只声明了 120105 与 16001）；需要时给 TOC 补一个 `38002` 再 `deploy.ps1 -Only titan` |
 
 
