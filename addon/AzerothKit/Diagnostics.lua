@@ -83,6 +83,10 @@ function D.PrintGroup()
     end
     out("小队露营:")
     for _, line in ipairs(rows) do out("  " .. line) end
+    m:Persist()
+    if ns.db then
+        out("已写入 SavedVariables.campPeersText（/reload 后 Agent 可读）")
+    end
 end
 
 function D.PrintSchema()

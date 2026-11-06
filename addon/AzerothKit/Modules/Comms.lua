@@ -39,6 +39,14 @@ local function OnAddonMessage(_, _, sender, _, _, message)
     local ver, cd, cap = tostring(message):match("^(%d+)|(%d+)|(%w+)$")
     if ver ~= "1" then return end
     peers[sender] = { cd = tonumber(cd) or 0, cap = cap or "none", at = GetTime() }
+    M:Persist()
+end
+
+-- 把队友状态写进 SavedVariables：Agent 可以直接读，不用抄聊天框
+function M:Persist()
+    if not ns.db then return end
+    ns.db.campPeersText = table.concat(M:Roster(), "\n")
+    ns.db.campPeersAt = date("%Y-%m-%d %H:%M:%S")
 end
 
 local function OnGroupChanged()
