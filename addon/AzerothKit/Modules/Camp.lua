@@ -17,6 +17,7 @@ local M = C:RegisterModule("Camp", {
     flavors = { retail = true, forever = true },
     settings = {
         { key = "scale",     type = "number",  default = 1.0,  min = 0.8, max = 1.6, step = 0.05, label = L("缩放", "Scale") },
+        { key = "width",     type = "number",  default = 230,  min = 160, max = 420, step = 5, label = L("宽度", "Width") },
         { key = "locked",    type = "boolean", default = false, label = L("锁定位置", "Lock") },
         { key = "patternKit",   type = "string", default = "营火工具包", hidden = true },
         { key = "patternFlint", type = "string", default = "燧石",       hidden = true },
@@ -293,7 +294,7 @@ end
 -- ---------- 界面 ----------
 local function FormatRemain(sec)
     if not sec or sec <= 0 then return L("剩余?", "?") end
-    sec = math.floor(sec + 0.5)
+    sec = math.ceil(sec)   -- 与官方冷却显示一致：向上取整，避免比官方快/慢 1 秒
     if sec >= 3600 then
         return string.format("%d:%02d:%02d", math.floor(sec / 3600),
             math.floor((sec % 3600) / 60), sec % 60)
@@ -304,6 +305,7 @@ end
 local function ApplyLayout()
     if not panel then return end
     panel:SetScale(tonumber(C:GetSetting("Camp", "scale")) or 1)
+    panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 230)
     panel.akLocked = C:GetSetting("Camp", "locked") and true or false
     T:RestorePosition(panel,
         C:GetSetting("Camp", "point"),
@@ -380,7 +382,7 @@ local function Refresh()
     elseif not state.fireAura then
         tentText = tentName .. "  |cff606060" .. L("需要附近有营火", "needs a campfire") .. "|r"
     elseif cd > 0 then
-        tentText = tentName .. "  |cff606060" .. L("冷却", "cooldown") .. " " .. FormatRemain(cd) .. "|r"
+        tentText = tentName .. "  |cff606060" .. FormatRemain(cd) .. "|r"
     else
         tentText = tentName
     end
@@ -414,7 +416,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 300, 104)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 104)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -500,7 +502,7 @@ function M:OnEnable()
     Refresh()
 
     if not ticker then
-        ticker = C_Timer.NewTicker(1, function()
+        ticker = C_Timer.NewTicker(0.5, function()
             if panel and panel:IsShown() then
                 Refresh()
             end
@@ -528,7 +530,7 @@ function M:OnDisable()
 end
 
 function M:OnSettingChanged(key)
-    if key == "scale" or key == "locked" or key == "point"
+    if key == "scale" or key == "width" or key == "locked" or key == "point"
         or key == "relPoint" or key == "x" or key == "y" then
         ApplyLayout()
     else
