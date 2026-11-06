@@ -1,0 +1,10 @@
+﻿# 依赖与缓存
+tools/node_modules/
+tools/package-lock.json
+tools/package.json
+
+# 本机 ACL 诊断产物
+_acl-recovery/
+
+# 游戏内产生的临时文件
+*.log
