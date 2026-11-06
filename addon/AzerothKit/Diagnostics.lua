@@ -16,7 +16,7 @@ end
 
 function D.PrintVersion()
     local order = C:GetModules()
-    out(string.format("v0.5.1 · %s · build %s · Interface %d · 模块 %d 个",
+    out(string.format("v0.6.0 · %s · build %s · Interface %d · 模块 %d 个",
         P.GetFlavorLabel(), tostring(P.build), P.toc, #order))
 end
 
@@ -46,6 +46,18 @@ function D.PrintIntegrations()
             end
         end
         out(string.format("  %-10s %s%s", name, state, detail))
+    end
+end
+
+function D.PrintCamp()
+    local m = C:GetModule("Camp")
+    if not m or not m.ScanReport then
+        out("露营模块未注册")
+        return
+    end
+    out("露营扫描:")
+    for _, line in ipairs(m:ScanReport()) do
+        out("  " .. tostring(line))
     end
 end
 
@@ -172,6 +184,7 @@ local function PrintHelp()
     out("  /ak probe        能力矩阵 + 模块 + 整合 + 档案版本")
     out("  /ak modules      模块列表")
     out("  /ak integrations 第三方插件整合状态")
+    out("  /ak camp         露营扫描（物品/配方/玩具/光环）")
     out("  /ak schema       可调项 schema（Agent 与面板共用）")
     out("  /ak export       导出当前配置到 SavedVariables，供 Agent 读取")
     out("  /ak toggle <名>  开关某个模块")
@@ -193,6 +206,8 @@ local function Handle(msg)
         D.PrintModules()
     elseif cmd == "integrations" then
         D.PrintIntegrations()
+    elseif cmd == "camp" then
+        D.PrintCamp()
     elseif cmd == "schema" then
         D.PrintSchema()
     elseif cmd == "export" then
