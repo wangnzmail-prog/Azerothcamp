@@ -373,7 +373,10 @@ function M:ApplyCollapse()
             if collapsed then obj:Hide() else obj:Show() end
         end
     end
-    panel:SetHeight(collapsed and 26 or 200)
+    panel:SetHeight(collapsed and 26 or 216)
+    if panel.version then
+        if collapsed then panel.version:Hide() else panel.version:Show() end
+    end
     if panel.toggle then panel.toggle:SetText(collapsed and "+" or "-") end
 end
 
@@ -542,7 +545,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 200)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 216)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -625,6 +628,10 @@ local function CreatePanel()
     p.aura:SetPoint("TOPLEFT", 10, -208)
     p.aura:SetPoint("TOPRIGHT", -10, -208)
     p.aura:SetText("")
+
+    p.version = T:CreateText(p, 9, true)
+    p.version:SetPoint("BOTTOMLEFT", 10, 6)
+    p.version:SetText("AzerothKit v" .. tostring(ns.VERSION or "?"))
 
     p.body = { p.fire, fireBtn, p.tent, toyBtn, p.tentCraft, craftBtn, p.aid, aidBtn,
         p.tentStatus, p.fireStatus, p.aura, p.peerTitle, p.peerLines[1], p.peerLines[2], p.peerLines[3] }
