@@ -360,11 +360,11 @@ local function ApplyLayout()
     panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 230)
     panel.akLocked = C:GetSetting("Camp", "locked") and true or false
     M:ApplyCollapse()
-        -- 统一按左上角锚点恢复：折叠/展开只向下长，任何保存点都不会导致回弹
+    -- 统一用左上角锚点：折叠/展开只向下生长；位置一律按 x/y 恢复，避免回弹
     T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
         tonumber(C:GetSetting("Camp", "x")) or 20,
         tonumber(C:GetSetting("Camp", "y")) or -120)
-endend
+end
 function M:ApplyCollapse()
     if not panel then return end
     local collapsed = C:GetSetting("Camp", "collapsed") and true or false
@@ -640,10 +640,14 @@ local function CreatePanel()
     p.toggle = toggle
 
     T:MakeMovable(p, function(point, relPoint, x, y)
-        C:SetSetting("Camp", "point", point)
-        C:SetSetting("Camp", "relPoint", relPoint)
-        C:SetSetting("Camp", "x", math.floor((x or 0) + 0.5))
-        C:SetSetting("Camp", "y", math.floor((y or 0) + 0.5))
+        -- 不信任 GetPoint 返回的锚点：一律换算成左上角偏移再存，否则会被 ApplyLayout 拉回
+        local es = p:GetEffectiveScale() / UIParent:GetEffectiveScale()
+        local nx = (p:GetLeft() or 0) * es - (UIParent:GetLeft() or 0)
+        local ny = (p:GetTop() or 0) * es - (UIParent:GetTop() or 0)
+        C:SetSetting("Camp", "point", "TOPLEFT")
+        C:SetSetting("Camp", "relPoint", "TOPLEFT")
+        C:SetSetting("Camp", "x", math.floor(nx + 0.5))
+        C:SetSetting("Camp", "y", math.floor(ny + 0.5))
         ApplyLayout()
     end)
 
