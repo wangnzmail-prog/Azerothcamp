@@ -54,6 +54,10 @@ local function OnGroupChanged()
 end
 
 function M:OnEnable()
+    -- 自 Legion 起，addon 消息前缀必须先注册，否则收发都会静默失败
+    if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+        pcall(C_ChatInfo.RegisterAddonMessagePrefix, PREFIX)
+    end
     C:On("CHAT_MSG_ADDON", OnAddonMessage)
     C:On("GROUP_ROSTER_UPDATE", OnGroupChanged)
     C:On("PLAYER_ENTERING_WORLD", OnGroupChanged)
