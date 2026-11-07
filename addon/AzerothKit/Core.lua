@@ -5,8 +5,29 @@ local P = ns.Platform
 local C = {}
 ns.Core = C
 
+-- ---------- 错误记录 ----------
+-- 只记与 AzerothKit 有关的报错，写进 SavedVariables.errors（最多 20 条）
+function C:RecordError(msg)
+    if not ns.db then return end
+    ns.db.errors = ns.db.errors or {}
+    table.insert(ns.db.errors, 1, date("%m-%d %H:%M:%S") .. "  " .. tostring(msg):sub(1, 500))
+    for i = 21, #ns.db.errors do ns.db.errors[i] = nil end
+end
+
+local function InstallErrorHook()
+    if type(seterrorhandler) ~= "function" then return end
+    local prev = geterrorhandler and geterrorhandler()
+    seterrorhandler(function(msg)
+        local text = tostring(msg)
+        if text:find("AzerothKit", 1, true) then
+            C:RecordError(text)
+        end
+        if prev then prev(msg) end
+    end)
+end
+
 -- Lua 层版本号：/reload 就能反映真实代码版本（TOC 的 ## Version 要重启客户端才更新）
-ns.VERSION = "0.9.3"
+ns.VERSION = "0.9.4"
 
 -- ---------- 数据库 ----------
 local DB_DEFAULTS = {
@@ -108,6 +129,7 @@ function C:SetModuleEnabled(name, enabled)
     if handler then
         local ok, err = pcall(handler, m)
         if not ok then
+            C:RecordError("module " .. name .. ": " .. tostring(err))
             print("|cffff4040[AzerothKit]|r module " .. name .. ": " .. tostring(err))
         end
     end
@@ -119,7 +141,8 @@ function C:ApplyModules()
         if self:IsModuleEnabled(name) and m.OnEnable then
             local ok, err = pcall(m.OnEnable, m)
             if not ok then
-                print("|cffff4040[AzerothKit]|r module " .. name .. ": " .. tostring(err))
+                C:RecordError("module " .. name .. ": " .. tostring(err))
+            print("|cffff4040[AzerothKit]|r module " .. name .. ": " .. tostring(err))
             end
         end
     end
@@ -384,6 +407,7 @@ boot:SetScript("OnEvent", function(self, event, arg1)
         Migrate(AzerothKitDB)
         CopyDefaults(AzerothKitDB, DB_DEFAULTS)
         ns.db = AzerothKitDB
+        InstallErrorHook()
 
         -- 版本戳：优先用 Lua 常量（/reload 即准），TOC 元数据只作兜底
         ns.db.addonVersion = ns.VERSION

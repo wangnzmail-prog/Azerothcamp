@@ -89,6 +89,19 @@ function D.PrintGroup()
     end
 end
 
+function D.PrintErrors()
+    local list = ns.db and ns.db.errors or {}
+    if #list == 0 then
+        out("没有记录到错误")
+        return
+    end
+    out(string.format("最近 %d 条错误:", #list))
+    for i, line in ipairs(list) do
+        out(string.format("  %d. %s", i, tostring(line)))
+    end
+    out("清空: /ak clearerrors   （/reload 后写入 SavedVariables.errors）")
+end
+
 function D.PrintSchema()
     local order, modules = C:GetModules()
     out("可调项 schema:")
@@ -214,6 +227,7 @@ local function PrintHelp()
     out("  /ak integrations 第三方插件整合状态")
     out("  /ak camp         露营扫描（物品/配方/玩具/光环）")
     out("  /ak group        小队露营状态（需队友也装插件）")
+    out("  /ak errors       查看记录的报错（/ak clearerrors 清空）")
     out("  /ak schema       可调项 schema（Agent 与面板共用）")
     out("  /ak export       导出当前配置到 SavedVariables，供 Agent 读取")
     out("  /ak toggle <名>  开关某个模块")
