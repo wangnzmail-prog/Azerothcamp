@@ -18,6 +18,7 @@ local M = C:RegisterModule("Camp", {
     settings = {
         { key = "scale",     type = "number",  default = 1.0,  min = 0.8, max = 1.6, step = 0.05, label = L("缩放", "Scale") },
         { key = "width",     type = "number",  default = 230,  min = 160, max = 420, step = 5, label = L("宽度", "Width") },
+        { key = "collapsed", type = "boolean", default = false, label = L("折叠", "Collapsed") },
         { key = "locked",    type = "boolean", default = false, label = L("锁定位置", "Lock") },
         { key = "patternKit",   type = "string", default = "营火工具包", hidden = true },
         { key = "patternFlint", type = "string", default = "燧石",       hidden = true },
@@ -358,12 +359,25 @@ local function ApplyLayout()
     panel:SetScale(tonumber(C:GetSetting("Camp", "scale")) or 1)
     panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 230)
     panel.akLocked = C:GetSetting("Camp", "locked") and true or false
+    M:ApplyCollapse()
     T:RestorePosition(panel,
         C:GetSetting("Camp", "point"),
         C:GetSetting("Camp", "relPoint"),
         tonumber(C:GetSetting("Camp", "x")) or -20,
         tonumber(C:GetSetting("Camp", "y")) or -120)
 end
+function M:ApplyCollapse()
+    if not panel then return end
+    local collapsed = C:GetSetting("Camp", "collapsed") and true or false
+    for _, obj in ipairs(panel.body or {}) do
+        if obj then
+            if collapsed then obj:Hide() else obj:Show() end
+        end
+    end
+    panel:SetHeight(collapsed and 26 or 200)
+    if panel.toggle then panel.toggle:SetText(collapsed and "+" or "-") end
+end
+
 M.ApplyLayout = ApplyLayout
 
 -- 帐篷行用安全按钮：玩具只能靠安全属性触发，普通 Lua 调不动
@@ -613,6 +627,19 @@ local function CreatePanel()
     p.aura:SetPoint("TOPRIGHT", -10, -208)
     p.aura:SetText("")
 
+    p.body = { p.fire, fireBtn, p.tent, toyBtn, p.tentCraft, craftBtn, p.aid, aidBtn,
+        p.tentStatus, p.fireStatus, p.aura, p.peerTitle, p.peerLines[1], p.peerLines[2], p.peerLines[3] }
+
+    local toggle = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
+    toggle:SetSize(18, 18)
+    toggle:SetPoint("TOPRIGHT", -6, -4)
+    toggle:SetScript("OnClick", function()
+        local now = not (C:GetSetting("Camp", "collapsed") and true or false)
+        C:SetSetting("Camp", "collapsed", now)
+        M:ApplyCollapse()
+    end)
+    p.toggle = toggle
+
     T:MakeMovable(p, function(point, relPoint, x, y)
         C:SetSetting("Camp", "point", point)
         C:SetSetting("Camp", "relPoint", relPoint)
@@ -684,6 +711,7 @@ function M:OnDisable()
 end
 
 function M:OnSettingChanged(key)
+    if key == "collapsed" then M:ApplyCollapse() return end
     if key == "scale" or key == "width" or key == "locked" or key == "point"
         or key == "relPoint" or key == "x" or key == "y" then
         ApplyLayout()
