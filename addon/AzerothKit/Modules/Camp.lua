@@ -360,16 +360,11 @@ local function ApplyLayout()
     panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 230)
     panel.akLocked = C:GetSetting("Camp", "locked") and true or false
     M:ApplyCollapse()
-    -- 统一用左上角锚点：折叠/展开时高度变化只向下生长，位置不会漂
-    local point = C:GetSetting("Camp", "point")
-    if point ~= "TOPLEFT" then
-        T:RestorePosition(panel, "TOPLEFT", "TOPLEFT", 20, -120)
-    else
-        T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
-            tonumber(C:GetSetting("Camp", "x")) or 20,
-            tonumber(C:GetSetting("Camp", "y")) or -120)
-    end
-end
+        -- 统一按左上角锚点恢复：折叠/展开只向下长，任何保存点都不会导致回弹
+    T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
+        tonumber(C:GetSetting("Camp", "x")) or 20,
+        tonumber(C:GetSetting("Camp", "y")) or -120)
+endend
 function M:ApplyCollapse()
     if not panel then return end
     local collapsed = C:GetSetting("Camp", "collapsed") and true or false
