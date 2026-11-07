@@ -30,9 +30,9 @@ local M = C:RegisterModule("Camp", {
         { key = "auraIDs",      type = "string", default = "1229741", hidden = true },
         { key = "patternFireAura", type = "string", default = "营火,篝火,Campfire,Fire", hidden = true },
         { key = "campfireIDs", type = "string", default = "1229739,1283391", hidden = true },
-        { key = "point",     type = "string", default = "TOPRIGHT", hidden = true },
-        { key = "relPoint",  type = "string", default = "TOPRIGHT", hidden = true },
-        { key = "x",         type = "number", default = -20, hidden = true },
+        { key = "point",     type = "string", default = "TOPLEFT", hidden = true },
+        { key = "relPoint",  type = "string", default = "TOPLEFT", hidden = true },
+        { key = "x",         type = "number", default = 20, hidden = true },
         { key = "y",         type = "number", default = -120, hidden = true },
     },
 })
@@ -360,11 +360,15 @@ local function ApplyLayout()
     panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 230)
     panel.akLocked = C:GetSetting("Camp", "locked") and true or false
     M:ApplyCollapse()
-    T:RestorePosition(panel,
-        C:GetSetting("Camp", "point"),
-        C:GetSetting("Camp", "relPoint"),
-        tonumber(C:GetSetting("Camp", "x")) or -20,
-        tonumber(C:GetSetting("Camp", "y")) or -120)
+    -- 统一用左上角锚点：折叠/展开时高度变化只向下生长，位置不会漂
+    local point = C:GetSetting("Camp", "point")
+    if point ~= "TOPLEFT" then
+        T:RestorePosition(panel, "TOPLEFT", "TOPLEFT", 20, -120)
+    else
+        T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
+            tonumber(C:GetSetting("Camp", "x")) or 20,
+            tonumber(C:GetSetting("Camp", "y")) or -120)
+    end
 end
 function M:ApplyCollapse()
     if not panel then return end
