@@ -639,6 +639,36 @@ local function CreatePanel()
     end)
     p.toggle = toggle
 
+    -- 标题栏快捷按钮：错误 / 小队 / 重载（始终可见，不受折叠影响）
+    local function HeaderButton(text, tip, onClick, offsetX)
+        local b = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
+        b:SetSize(18, 18)
+        b:SetPoint("TOPRIGHT", offsetX, -4)
+        b:SetText(text)
+        local fs = b:GetFontString()
+        if fs then fs:SetFont(STANDARD_TEXT_FONT, 10, "") end
+        b:SetScript("OnClick", onClick)
+        b:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+            GameTooltip:SetText(tip, 1, 1, 1)
+            GameTooltip:Show()
+        end)
+        b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        return b
+    end
+
+    p.btnErr = HeaderButton("E", L("查看报错", "Errors"), function()
+        if ns.Diagnostics and ns.Diagnostics.PrintErrors then ns.Diagnostics.PrintErrors() end
+    end, -28)
+
+    p.btnGroup = HeaderButton("G", L("小队露营状态", "Party camping"), function()
+        if ns.Diagnostics and ns.Diagnostics.PrintGroup then ns.Diagnostics.PrintGroup() end
+    end, -50)
+
+    p.btnReload = HeaderButton("R", L("重载界面 /reload", "Reload UI"), function()
+        ReloadUI()
+    end, -72)
+
     T:MakeMovable(p, function(point, relPoint, x, y)
         -- 不信任 GetPoint 返回的锚点：一律换算成左上角偏移再存，否则会被 ApplyLayout 拉回
         local es = p:GetEffectiveScale() / UIParent:GetEffectiveScale()
