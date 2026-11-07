@@ -7,7 +7,7 @@
 ## Notes: Modular addon suite skeleton with agent-writable profile and integrations
 ## Notes-zhCN: 正式服与无限双版本模块化插件骨架（支持 Agent 写配置与第三方整合）
 ## Author: DSH
-## Version: 0.10.3-1
+## Version: 0.10.4-1
 ## SavedVariables: AzerothKitDB
 ## AddonCompartmentFunc: AzerothKit_Toggle
 ## IconTexture: Interface\Icons\INV_Misc_Map_01

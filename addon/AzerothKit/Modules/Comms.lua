@@ -61,13 +61,19 @@ function M:OnEnable()
     C:On("CHAT_MSG_ADDON", OnAddonMessage)
     C:On("GROUP_ROSTER_UPDATE", OnGroupChanged)
     C:On("PLAYER_ENTERING_WORLD", OnGroupChanged)
-    C_Timer.NewTicker(30, function()
-        if IsInGroup() then M:Broadcast() end
-    end)
+    if not self.ticker then
+        self.ticker = C_Timer.NewTicker(30, function()
+            if IsInGroup() then M:Broadcast() end
+        end)
+    end
     M:Broadcast()
 end
 
 function M:OnDisable()
+    if self.ticker then
+        self.ticker:Cancel()
+        self.ticker = nil
+    end
     C:Off("CHAT_MSG_ADDON", OnAddonMessage)
     C:Off("GROUP_ROSTER_UPDATE", OnGroupChanged)
     C:Off("PLAYER_ENTERING_WORLD", OnGroupChanged)
