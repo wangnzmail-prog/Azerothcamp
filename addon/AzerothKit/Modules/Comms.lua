@@ -19,16 +19,16 @@ local function Camp() return C:GetModule("Camp") end
 local function MyInfo()
     local camp = Camp()
     if camp and camp.GetBroadcastInfo then
-        local cd, cap = camp:GetBroadcastInfo()
-        return math.floor(cd or 0), tostring(cap or "none")
+        local cd, cap, slots = camp:GetBroadcastInfo()
+        return math.floor(cd or 0), tostring(cap or "none"), math.floor(slots or 0)
     end
-    return 0, "none"
+    return 0, "none", 0
 end
 
 function M:Broadcast()
     if not IsInGroup() then return end
-    local cd, cap = MyInfo()
-    local message = string.format("1|%d|%s", cd, cap)
+    local cd, cap, slots = MyInfo()
+    local message = string.format("1|%d|%s|%d", cd, cap, slots)
     local ok = pcall(C_ChatInfo.SendAddonMessage, PREFIX, message, IsInRaid() and "RAID" or CHANNEL)
     return ok
 end
@@ -36,9 +36,10 @@ end
 local function OnAddonMessage(_, _, sender, _, _, message)
     if not sender or sender == "" then return end
     sender = Ambiguate and Ambiguate(sender, "short") or sender
-    local ver, cd, cap = tostring(message):match("^(%d+)|(%d+)|(%w+)$")
+    local ver, cd, cap, slots = tostring(message):match("^(%d+)|(%d+)|([%w_]+)|?(%d*)$")
     if ver ~= "1" then return end
-    peers[sender] = { cd = tonumber(cd) or 0, cap = cap or "none", at = GetTime() }
+    peers[sender] = { cd = tonumber(cd) or 0, cap = cap or "none",
+        slots = tonumber(slots) or 0, at = GetTime() }
     M:Persist()
 end
 

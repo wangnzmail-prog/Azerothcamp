@@ -522,7 +522,10 @@ local function Refresh()
     -- 营火状态行
     if panel.fireStatus then
         if state.fireAura then
-            panel.fireStatus:SetText("|cff4dcc59" .. L("营火", "Campfire") .. "|r " .. state.fireAura)
+            local cap = OwnSlots()
+            for _, p in pairs(ns.CampPeers or {}) do cap = math.max(cap, tonumber(p.slots) or 0) end
+            local suffix = cap > 0 and string.format(" · %d格", cap) or ""
+            panel.fireStatus:SetText("|cff4dcc59" .. L("营火", "Campfire") .. "|r " .. state.fireAura .. suffix)
         else
             panel.fireStatus:SetText("|cff606060" .. L("营火：附近没有", "Campfire: none nearby") .. "|r")
         end
