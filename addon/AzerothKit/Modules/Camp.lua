@@ -712,6 +712,22 @@ local function OnSkillLinesChanged()
     Refresh()
 end
 
+-- 战斗中整块隐藏：露营只能在战斗外做，避免挡视线
+local wasShown = false
+local function OnCombatStart()
+    if not panel then return end
+    wasShown = panel:IsShown()
+    if wasShown then panel:Hide() end
+end
+
+local function OnCombatEnd()
+    if panel and wasShown then
+        panel:Show()
+        wasShown = false
+    end
+    UpdateTentButtons()
+end
+
 function M:OnEnable()
     if not panel then
         panel = CreatePanel()
@@ -733,7 +749,8 @@ function M:OnEnable()
     C:On("BAG_UPDATE", OnBagUpdate)
     C:On("BAG_UPDATE_DELAYED", OnBagDelayed)
     C:On("SKILL_LINES_CHANGED", OnSkillLinesChanged)
-    C:On("PLAYER_REGEN_ENABLED", UpdateTentButtons)
+    C:On("PLAYER_REGEN_ENABLED", OnCombatEnd)
+    C:On("PLAYER_REGEN_DISABLED", OnCombatStart)
 end
 
 function M:OnDisable()
@@ -747,7 +764,8 @@ function M:OnDisable()
     C:Off("BAG_UPDATE", OnBagUpdate)
     C:Off("BAG_UPDATE_DELAYED", OnBagDelayed)
     C:Off("SKILL_LINES_CHANGED", OnSkillLinesChanged)
-    C:Off("PLAYER_REGEN_ENABLED", UpdateTentButtons)
+    C:Off("PLAYER_REGEN_ENABLED", OnCombatEnd)
+    C:Off("PLAYER_REGEN_DISABLED", OnCombatStart)
 end
 
 function M:OnSettingChanged(key)

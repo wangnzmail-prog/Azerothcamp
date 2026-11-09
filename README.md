@@ -19,6 +19,8 @@
 | `docs/08-suite-blueprint.md` | 自研套件蓝图：分层、模块预算与工期、统计面板设计、迁移策略 |
 | `docs/09-agent-bridge.md` | Agent 接入：Schema / Profile / Export 三件套、文件通道、整合层设计 |
 | `docs/10-forever-camping-ids.md` | 无限露营系统实测 ID（物品/玩具/营火光环）与门禁规则 |
+| `docs/11-camping-facilities.md` | 露营设施清单（38–39 件）、buff 对照与三阶规则 |
+| `docs/12-camping-addons-landscape.md` | CurseForge 露营插件生态调研（102 个）、功能矩阵、空白与设计建议 |
 | `addon/AzerothKit/` | 可直接加载的双版本示例插件（0.1.0） |
 | `tools/deploy.ps1` | 把示例插件以目录联接方式挂进两个客户端 |
 | `tools/check.ps1` | 校验 TOC Interface 与本机客户端版本是否匹配 |
