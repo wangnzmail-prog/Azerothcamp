@@ -394,7 +394,7 @@ function M:ApplyCollapse()
             if collapsed then obj:Hide() else obj:Show() end
         end
     end
-    panel:SetHeight(collapsed and 26 or 216)
+    panel:SetHeight(collapsed and 26 or 268)
     if panel.version then
         if collapsed then panel.version:Hide() else panel.version:Show() end
     end
@@ -566,7 +566,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 216)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 268)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -650,11 +650,23 @@ local function CreatePanel()
     p.aura:SetPoint("TOPRIGHT", -10, -208)
     p.aura:SetText("")
 
+    p.otherTitle = T:CreateText(p, 10, true)
+    p.otherTitle:SetPoint("TOPLEFT", 10, -208)
+    p.otherTitle:SetText(L("其他营地制品", "Other camp items"))
+
+    p.otherLines = {}
+    for i = 1, 3 do
+        local fs = T:CreateText(p, 10, true)
+        fs:SetPoint("TOPLEFT", 10, -224 - (i - 1) * 14)
+        fs:SetText("")
+        p.otherLines[i] = fs
+    end
+
     p.version = T:CreateText(p, 9, true)
     p.version:SetPoint("BOTTOMLEFT", 10, 6)
     p.version:SetText("AzerothKit v" .. tostring(ns.VERSION or "?"))
 
-    p.body = { p.fire, fireBtn, p.tent, toyBtn, p.tentCraft, craftBtn, p.aid, aidBtn,
+    p.body = { p.fire, fireBtn, p.otherTitle, p.otherLines[1], p.otherLines[2], p.otherLines[3], p.tent, toyBtn, p.tentCraft, craftBtn, p.aid, aidBtn,
         p.tentStatus, p.fireStatus, p.aura, p.peerTitle, p.peerLines[1], p.peerLines[2], p.peerLines[3] }
 
     local toggle = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
@@ -746,6 +758,32 @@ local function OnCombatEnd()
         panel:Show()
         wasShown = false
     end
+    -- 其他营地制品（按 itemID 识别，与语言无关）
+    if panel.otherLines then
+        local list = {}
+        for prof, row in pairs(state.others or {}) do
+            list[#list + 1] = { prof = prof, row = row }
+        end
+        table.sort(list, function(a, b) return tostring(a.prof) < tostring(b.prof) end)
+
+        for i = 1, 3 do
+            local fs = panel.otherLines[i]
+            local entry = list[i]
+            if entry then
+                fs:SetText(string.format("%s ×%d  |cff808080%s|r",
+                    tostring(entry.row.name or entry.prof), entry.row.count or 0,
+                    tostring(entry.row.effect or "")))
+            elseif i == 1 then
+                local peers = ns.CampPeers or {}
+                local hasPeer = next(peers) ~= nil
+                fs:SetText("|cff606060" .. (hasPeer and L("无其他营地制品", "none") or
+                    L("无其他制品（队友未装插件时只能看到自己）", "none (teammates without addon)")) .. "|r")
+            else
+                fs:SetText("")
+            end
+        end
+    end
+
     UpdateTentButtons()
 end
 

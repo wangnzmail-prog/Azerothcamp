@@ -27,7 +27,7 @@ local function InstallErrorHook()
 end
 
 -- Lua 层版本号：/reload 就能反映真实代码版本（TOC 的 ## Version 要重启客户端才更新）
-ns.VERSION = "0.13.0"
+ns.VERSION = "0.14.0"
 
 -- ---------- 数据库 ----------
 local DB_DEFAULTS = {
