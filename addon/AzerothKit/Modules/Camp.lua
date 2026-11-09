@@ -147,6 +147,27 @@ local function Rescan()
         state.recipeID = FindRecipe(kit)
     end
     state.toyID, state.toyName = FindToy(toy)
+
+    -- 按 itemID 识别所有营地制品（不再依赖名字）
+    state.others = {}
+    local lookup = ns.CampData and ns.CampData.lookup
+    if lookup then
+        for bag = 0, (NUM_BAG_SLOTS or 4) do
+            local slots = C_Container.GetContainerNumSlots(bag) or 0
+            for slot = 1, slots do
+                local info = C_Container.GetContainerItemInfo(bag, slot)
+                if info and info.itemID and lookup[info.itemID] then
+                    local e = lookup[info.itemID]
+                    local row = state.others[e.prof]
+                    if not row then
+                        row = { prof = e.prof, effect = e.effect, count = 0, name = ItemName(info.itemID), tier = e.tier }
+                        state.others[e.prof] = row
+                    end
+                    row.count = row.count + (info.stackCount or 1)
+                end
+            end
+        end
+    end
 end
 
 local function PlayerAuras()
@@ -789,6 +810,12 @@ function M:ScanReport()
         "kit", state.kit, "flint", state.flint, "wood", state.wood, "tent", state.tent))
     add(string.format("recipe=%s  toy=%s(%s)",
         tostring(state.recipeID), tostring(state.toyID), tostring(state.toyName)))
+    if state.others then
+        for prof, row in pairs(state.others) do
+            add(string.format("  campItem %s  x%d  %s  (%s)", prof, row.count,
+                tostring(row.name), tostring(row.effect)))
+        end
+    end
     add(string.format("fireAura=%s(%s)  toyReady=%s  craftReady=%s  toyCd=%s  craftCd=%s",
         tostring(state.fireAura), tostring(state.fireAuraID), tostring(state.toyReady),
         tostring(state.craftReady), tostring(math.floor(SharedCooldown())),

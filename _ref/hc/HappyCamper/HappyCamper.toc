@@ -1,0 +1,67 @@
+## Interface: 16001
+## Title: Happy Camper
+## Notes: Makes WoW Forever camps social: shared camps on the map, camp buff tracking, a Camp Builder to get the buffs you want, and things to say and do at the fire.
+## Version: 1.1.1
+## Author: Torridon
+## IconTexture: Interface\AddOns\HappyCamper\Media\Emblem
+## AddonCompartmentFunc: HappyCamper_OnAddonCompartmentClick
+## SavedVariables: HappyCamperDB
+## SavedVariablesPerCharacter: HappyCamperCharDB
+## X-Copyright: Copyright (c) 2026 Torridon. All rights reserved.
+## X-License: All Rights Reserved (see LICENSE)
+## X-Wago-ID: aND9rA6o
+
+Locale.lua
+Locales\deDE.lua
+Locales\frFR.lua
+Locales\esES.lua
+Locales\ptBR.lua
+Locales\plPL.lua
+Locales\zhCN.lua
+Locales\koKR.lua
+Data.lua
+Names.lua
+Location.lua
+Style.lua
+Menu.lua
+Detect.lua
+Camps.lua
+CampsiteData.lua
+Campsites.lua
+Requests.lua
+Comm.lua
+Stats.lua
+Social.lua
+LayerInvites.lua
+Music.lua
+Announce.lua
+AnnounceEditor.lua
+ChatPins.lua
+Others.lua
+Search.lua
+MapPins.lua
+MapPins.xml
+MapBar.lua
+Minimap.lua
+MinimapPins.lua
+Options.lua
+Finder.lua
+Group.lua
+Circle.lua
+Badges.lua
+Songbook.lua
+HandbookData.lua
+Handbook.lua
+Hub.lua
+Cinematic.lua
+Guide.lua
+Supplies.lua
+Widget.lua
+Tooltips.lua
+Feedback.lua
+Broadcast.lua
+Season.lua
+Mode.lua
+Backup.lua
+API.lua
+Core.lua

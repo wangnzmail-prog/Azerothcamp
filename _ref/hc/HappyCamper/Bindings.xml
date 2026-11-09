@@ -1,0 +1,20 @@
+<Bindings>
+    <!-- Happy Camper's key bindings (the game loads this file by itself: it
+         isn't in the .toc). Names in Widget.lua. Each slot's binding clicks its
+         button, so it uses what the slot holds. -->
+    <Binding name="HAPPYCAMPER_KIT" header="HAPPYCAMPER" category="ADDONS">HappyCamper_ToggleKit()</Binding>
+    <Binding name="CLICK HappyCamperPlaceCampfire:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperPlaceObject1:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperPlaceObject2:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperPlaceObject3:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperPlaceObject4:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperPlaceObject5:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperSleepingBag:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperFood1:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperPotion1:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperExtra1:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperExtra2:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperExtra3:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperWeapon1:LeftButton" category="ADDONS"/>
+    <Binding name="CLICK HappyCamperWeapon2:LeftButton" category="ADDONS"/>
+</Bindings>

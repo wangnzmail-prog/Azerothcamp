@@ -1,0 +1,21 @@
+## Interface: 16001
+## Title: Camping Kit
+## Notes: A tent button with your campfire, camp objects, sleeping bag and food & drink slots around it. Timers for camp benefits and Well Fed.
+## Author: Doug Mansell
+## Version: 1.8
+## SavedVariables: CampingKitDB, KitDockDB
+## SavedVariablesPerCharacter: CampingKitCharDB
+## IconTexture: Interface\AddOns\CampingKit\media\tent_closed_64
+## Category: Professions
+## AddonCompartmentFunc: CampingKit_OnCompartmentClick
+## X-Curse-Project-ID: 1735397
+
+Data.lua
+Libs\KitDock\KitDock.lua
+Libs\KitCore\KitCore.lua
+Camping.lua
+Camp.lua
+CampNet.lua
+CampOthers.lua
+CampMap.lua
+CampMap.xml
