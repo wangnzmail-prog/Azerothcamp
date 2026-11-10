@@ -17,7 +17,7 @@ local M = C:RegisterModule("Camp", {
     flavors = { forever = true },
     settings = {
         { key = "scale",     type = "number",  default = 1.0, min = 0.8, max = 1.6, step = 0.05, label = L("缩放", "Scale") },
-        { key = "width",     type = "number",  default = 300, min = 200, max = 520, step = 10, label = L("宽度", "Width") },
+        { key = "width",     type = "number",  default = 340, min = 240, max = 640, step = 10, label = L("宽度", "Width") },
         { key = "collapsed", type = "boolean", default = false, label = L("折叠", "Collapsed") },
         { key = "locked",    type = "boolean", default = false, label = L("锁定位置", "Lock") },
         { key = "point",     type = "string",  default = "TOPLEFT", hidden = true },
@@ -209,14 +209,14 @@ local function ApplyCollapse()
     if scroll then
         if collapsed then scroll:Hide() else scroll:Show() end
     end
-    panel:SetHeight(collapsed and 26 or 420)
+    panel:SetHeight(collapsed and 26 or 660)
     if panel.toggle then panel.toggle:SetText(collapsed and "+" or "-") end
 end
 
 local function ApplyLayout()
     if not panel then return end
     panel:SetScale(tonumber(C:GetSetting("Camp", "scale")) or 1)
-    panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 300)
+    panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 340)
     panel.akLocked = C:GetSetting("Camp", "locked") and true or false
     ApplyCollapse()
     T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
@@ -230,7 +230,7 @@ local function Row(i)
         if i == 1 or rows[i - 1] then fs = panel.content:CreateFontString(nil, "ARTWORK", "GameFontHighlight") end
         fs = fs or panel.content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
         fs:SetJustifyH("LEFT")
-        fs:SetWidth(280)
+        fs:SetWidth(320)
         fs:SetWordWrap(false)
         fs:SetPoint("TOPLEFT", 4, -(i - 1) * ROW_H)
         rows[i] = fs
@@ -285,8 +285,9 @@ local function Refresh()
             end
             b:ClearAllPoints()
             b:SetPoint("TOPLEFT", 2, -((headerIdx - 1) * ROW_H))
+            b:SetWidth(300)
             b:SetScript("OnClick", function()
-                expanded[key] = not open
+                expanded[key] = not expanded[key]
                 Refresh()
             end)
             b:Show()
@@ -357,13 +358,13 @@ local function Refresh()
 end
 
 local function OnWheel(_, delta)
-    local smax = math.max(0, (panel.content:GetHeight() or 0) - 380)
+    local smax = math.max(0, (panel.content:GetHeight() or 0) - 620)
     panel.offset = math.min(smax, math.max(0, (panel.offset or 0) - delta * 24))
     panel.content:SetPoint("TOPLEFT", panel.scrollChild or panel.scroll, "TOPLEFT", 0, panel.offset)
 end
 
 local function CreatePanel()
-    local f = T:CreatePanel("AzerothCampFrame", UIParent, 300, 420)
+    local f = T:CreatePanel("AzerothCampFrame", UIParent, 340, 660)
     f:SetFrameStrata("DIALOG")
     f:SetClampedToScreen(true)
 
