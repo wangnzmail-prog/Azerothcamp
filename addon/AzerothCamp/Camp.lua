@@ -19,7 +19,7 @@ local M = C:RegisterModule("Camp", {
     flavors = { forever = true },   -- 正式服没有露营系统
     settings = {
         { key = "scale",     type = "number",  default = 1.0,  min = 0.8, max = 1.6, step = 0.05, label = L("缩放", "Scale") },
-        { key = "width",     type = "number",  default = 230,  min = 160, max = 420, step = 5, label = L("宽度", "Width") },
+        { key = "width",     type = "number",  default = 250,  min = 160, max = 420, step = 5, label = L("宽度", "Width") },
         { key = "collapsed", type = "boolean", default = false, label = L("折叠", "Collapsed") },
         { key = "locked",    type = "boolean", default = false, label = L("锁定位置", "Lock") },
         { key = "patternKit",   type = "string", default = "营火工具包", hidden = true },
@@ -369,6 +369,11 @@ local function ToggleFire()
 end
 
 -- ---------- 界面 ----------
+local function FullTime(sec)
+    sec = math.max(0, math.floor((sec or 0) + 0.5))
+    return string.format("%d:%02d:%02d", math.floor(sec / 3600), math.floor((sec % 3600) / 60), sec % 60)
+end
+
 local function FormatRemain(sec)
     if not sec or sec <= 0 then return L("剩余?", "?") end
     sec = math.ceil(sec)   -- 与官方冷却显示一致：向上取整，避免比官方快/慢 1 秒
@@ -382,7 +387,7 @@ end
 local function ApplyLayout()
     if not panel then return end
     panel:SetScale(tonumber(C:GetSetting("Camp", "scale")) or 1)
-    panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 230)
+    panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 250)
     panel.akLocked = C:GetSetting("Camp", "locked") and true or false
     M:ApplyCollapse()
     -- 统一用左上角锚点：折叠/展开只向下生长；位置一律按 x/y 恢复，避免回弹
@@ -551,8 +556,12 @@ local function Refresh()
             else
                 color = "|cff4dcc59"
             end
-            local stacks = (a.apps and a.apps > 1) and string.format("%d层 ", a.apps) or ""
-            parts[#parts + 1] = string.format("%s%s|r %s%s", color, a.name, stacks, FormatRemain(a.remain))
+            if a.id == 429959 then
+                parts[#parts + 1] = string.format("%s舒适的睡袋（%s）|r x%d %s",
+                    color, a.name, a.apps or 1, FullTime(a.remain))
+            else
+                parts[#parts + 1] = string.format("%s%s|r %s", color, a.name, FormatRemain(a.remain))
+            end
         end
         panel.aura:SetText(table.concat(parts, "  "))
     end
@@ -581,7 +590,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 230, 268)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 250, 268)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -660,10 +669,11 @@ local function CreatePanel()
         p.peerLines[i] = fs
     end
 
-    p.aura = T:CreateText(p, 11, true)
+    p.aura = T:CreateText(p, 10, true)
     p.aura:SetPoint("TOPLEFT", 10, -208)
     p.aura:SetPoint("TOPRIGHT", -10, -208)
     p.aura:SetText("")
+    if p.aura.SetWordWrap then pcall(p.aura.SetWordWrap, p.aura, false) end
 
     p.otherTitle = T:CreateText(p, 10, true)
     p.otherTitle:SetPoint("TOPLEFT", 10, -208)
