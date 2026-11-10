@@ -704,6 +704,12 @@ local function CreatePanel()
         p.peerLines[i] = fs
     end
 
+    p.bag = T:CreateText(p, 10, true)
+    p.bag:SetPoint("TOPLEFT", 10, -256)
+    p.bag:SetWidth(228)
+    p.bag:SetText("")
+    if p.bag.SetWordWrap then pcall(p.bag.SetWordWrap, p.bag, false) end
+
     p.aura = T:CreateText(p, 10, true)
     p.aura:SetPoint("TOPLEFT", 10, -258)
     p.aura:SetWidth(228)
