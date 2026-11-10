@@ -403,7 +403,7 @@ function M:ApplyCollapse()
             if collapsed then obj:Hide() else obj:Show() end
         end
     end
-    panel:SetHeight(collapsed and 26 or 268)
+    panel:SetHeight(collapsed and 26 or 300)
     if panel.version then
         if collapsed then panel.version:Hide() else panel.version:Show() end
     end
@@ -544,6 +544,7 @@ local function Refresh()
     local auras = PlayerAuras()
     if #auras == 0 then
         panel.aura:SetText("|cff606060" .. L("无帐篷光环", "No tent aura") .. "|r")
+        if panel.aura2 then panel.aura2:SetText("") end
     else
         local parts = {}
         for i = 1, math.min(#auras, 3) do
@@ -563,7 +564,8 @@ local function Refresh()
                 parts[#parts + 1] = string.format("%s%s|r %s", color, a.name, FormatRemain(a.remain))
             end
         end
-        panel.aura:SetText(table.concat(parts, "  "))
+        panel.aura:SetText(parts[1] or "")
+        if panel.aura2 then panel.aura2:SetText(parts[2] or "") end
     end
 
     -- 小队：谁在冷却、谁能放什么
@@ -590,7 +592,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 250, 268)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 250, 300)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -658,31 +660,37 @@ local function CreatePanel()
     p.fireStatus:SetText("")
 
     p.peerTitle = T:CreateText(p, 10, true)
-    p.peerTitle:SetPoint("TOPLEFT", 10, -148)
+    p.peerTitle:SetPoint("TOPLEFT", 10, -132)
     p.peerTitle:SetText(L("小队露营", "Party camping"))
 
     p.peerLines = {}
     for i = 1, 3 do
         local fs = T:CreateText(p, 10, true)
-        fs:SetPoint("TOPLEFT", 10, -164 - (i - 1) * 14)
+        fs:SetPoint("TOPLEFT", 10, -148 - (i - 1) * 14)
         fs:SetText("")
         p.peerLines[i] = fs
     end
 
     p.aura = T:CreateText(p, 10, true)
-    p.aura:SetPoint("TOPLEFT", 10, -208)
-    p.aura:SetPoint("TOPRIGHT", -10, -208)
+    p.aura:SetPoint("TOPLEFT", 10, -258)
+    p.aura:SetWidth(228)
     p.aura:SetText("")
     if p.aura.SetWordWrap then pcall(p.aura.SetWordWrap, p.aura, false) end
 
+    p.aura2 = T:CreateText(p, 10, true)
+    p.aura2:SetPoint("TOPLEFT", 10, -272)
+    p.aura2:SetWidth(228)
+    p.aura2:SetText("")
+    if p.aura2.SetWordWrap then pcall(p.aura2.SetWordWrap, p.aura2, false) end
+
     p.otherTitle = T:CreateText(p, 10, true)
-    p.otherTitle:SetPoint("TOPLEFT", 10, -208)
+    p.otherTitle:SetPoint("TOPLEFT", 10, -194)
     p.otherTitle:SetText(L("其他营地制品", "Other camp items"))
 
     p.otherLines = {}
     for i = 1, 3 do
         local fs = T:CreateText(p, 10, true)
-        fs:SetPoint("TOPLEFT", 10, -224 - (i - 1) * 14)
+        fs:SetPoint("TOPLEFT", 10, -210 - (i - 1) * 14)
         fs:SetText("")
         p.otherLines[i] = fs
     end
