@@ -297,27 +297,17 @@ local ROW_H = 22
 local function ApplyCollapse()
     if not panel then return end
     local collapsed = C:GetSetting("Camp", "collapsed") and true or false
+    local icon = CreateFloatingIcon()
+    icon:ClearAllPoints()
+    icon:SetPoint("TOPLEFT", UIParent, "TOPLEFT",
+        tonumber(C:GetSetting("Camp", "iconX")) or 20,
+        tonumber(C:GetSetting("Camp", "iconY")) or -120)
+    icon:Show()
+
     if collapsed then
-        panel:SetSize(32, 32)
-        if panel.title then panel.title:Hide() end
-        if panel.cols then for _, col in ipairs(panel.cols) do col:Hide() end end
-        if panel.reloadBtn then panel.reloadBtn:Hide() end
-        if panel.icon then
-            panel.icon:ClearAllPoints()
-            panel.icon:SetPoint("CENTER", panel, "CENTER", 0, 0)
-        end
-        T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
-            tonumber(C:GetSetting("Camp", "iconX")) or 20,
-            tonumber(C:GetSetting("Camp", "iconY")) or -120)
+        panel:Hide()
     else
-        panel:SetSize(1100, 460)
-        if panel.title then panel.title:Show() end
-        if panel.cols then for _, col in ipairs(panel.cols) do col:Show() end end
-        if panel.reloadBtn then panel.reloadBtn:Show() end
-        if panel.icon then
-            panel.icon:ClearAllPoints()
-            panel.icon:SetPoint("TOPRIGHT", -2, -2)
-        end
+        panel:Show()
         panel:ClearAllPoints()
         local px = tonumber(C:GetSetting("Camp", "x"))
         local py = tonumber(C:GetSetting("Camp", "y"))
@@ -505,6 +495,38 @@ local function Refresh()
     end
 end
 
+local floatingIcon
+
+local function SaveIconPos()
+    if not floatingIcon then return end
+    local es = floatingIcon:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    C:SetSetting("Camp", "iconX", math.floor(((floatingIcon:GetLeft() or 0) * es - (UIParent:GetLeft() or 0)) + 0.5))
+    C:SetSetting("Camp", "iconY", math.floor(((floatingIcon:GetTop() or 0) * es - (UIParent:GetTop() or 0)) + 0.5))
+end
+
+local function CreateFloatingIcon()
+    if floatingIcon then return floatingIcon end
+    local b = CreateFrame("Button", "AzerothCampIcon", UIParent)
+    b:SetSize(32, 32)
+    b:SetFrameStrata("MEDIUM")
+    b:SetMovable(true)
+    b:SetClampedToScreen(true)
+    local tex = b:CreateTexture(nil, "ARTWORK")
+    tex:SetAllPoints()
+    tex:SetTexture((C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(279981))
+        or "Interface\\Icons\\INV_Misc_Campfire_01")
+    b:RegisterForDrag("RightButton")
+    b:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    b:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() SaveIconPos() end)
+    b:SetScript("OnClick", function(_, button)
+        if button == "RightButton" then return end
+        C:SetSetting("Camp", "collapsed", not (C:GetSetting("Camp", "collapsed") and true or false))
+        ApplyCollapse()
+    end)
+    floatingIcon = b
+    return b
+end
+
 local function CreatePanel()
     local f = T:CreatePanel("AzerothCampFrame", UIParent, 1100, 460)
     f:SetFrameStrata("DIALOG")
@@ -521,51 +543,39 @@ local function CreatePanel()
         C:SetSetting("Camp", "y", math.floor(((self:GetTop() or 0) * es - (UIParent:GetTop() or 0)) + 0.5))
     end)
 
+    local deco = f:CreateTexture(nil, "ARTWORK")
+    deco:SetSize(24, 24)
+    deco:SetPoint("TOPLEFT", 10, -4)
+    deco:SetTexture((C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(279981))
+        or "Interface\\Icons\\INV_Misc_Campfire_01")
+    f.deco = deco
+
     local title = T:CreateText(f, 16, false)
-    title:SetPoint("TOPLEFT", 12, -6)
+    title:SetPoint("TOPLEFT", 40, -6)
     title:SetText(L("露营管理", "Camping"))
 
-    local icon = CreateFrame("Button", nil, f)
-    icon:SetSize(28, 28)
-    icon:SetPoint("TOPRIGHT", -2, -2)
-    local tex = icon:CreateTexture(nil, "ARTWORK")
-    tex:SetAllPoints()
-    tex:SetTexture((C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(279981))
-        or "Interface\\Icons\\INV_Misc_Campfire_01")
-    icon:RegisterForDrag("RightButton")
-    icon:SetScript("OnDragStart", function()
-        if C:GetSetting("Camp", "collapsed") then f.dragging = true f:StartMoving() else f.dragging = false end
-    end)
-    icon:SetScript("OnDragStop", function()
-        if not f.dragging then return end
-        f.dragging = false
-        f:StopMovingOrSizing()
-        local es = f:GetEffectiveScale() / UIParent:GetEffectiveScale()
-        C:SetSetting("Camp", "iconX", math.floor(((f:GetLeft() or 0) * es - (UIParent:GetLeft() or 0)) + 0.5))
-        C:SetSetting("Camp", "iconY", math.floor(((f:GetTop() or 0) * es - (UIParent:GetTop() or 0)) + 0.5))
-    end)
-    icon:SetScript("OnClick", function(_, button)
-        if button == "RightButton" then return end
-        C:SetSetting("Camp", "collapsed", not (C:GetSetting("Camp", "collapsed") and true or false))
+    local xBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    xBtn:SetSize(28, 28)
+    xBtn:SetPoint("TOPRIGHT", -2, -2)
+    xBtn:SetText("X")
+    if xBtn.GetFontString then
+        local fs = xBtn:GetFontString(); if fs then fs:SetFont(STANDARD_TEXT_FONT, 14, "") end
+    end
+    xBtn:SetScript("OnClick", function()
+        C:SetSetting("Camp", "collapsed", true)
         ApplyCollapse()
     end)
+    f.closeBtn = xBtn
+
     local reloadBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     reloadBtn:SetSize(28, 28)
     reloadBtn:SetPoint("TOPRIGHT", -34, -2)
     reloadBtn:SetText("R")
     if reloadBtn.GetFontString then
-        local fs = reloadBtn:GetFontString()
-        if fs then fs:SetFont(STANDARD_TEXT_FONT, 14, "") end
+        local fs = reloadBtn:GetFontString(); if fs then fs:SetFont(STANDARD_TEXT_FONT, 14, "") end
     end
     reloadBtn:SetScript("OnClick", function() ReloadUI() end)
-    reloadBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Reload UI"); GameTooltip:Show()
-    end)
-    reloadBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     f.reloadBtn = reloadBtn
-
-    f.icon = icon
-    f.title = title
 
     local widths = { 350, 430, 250 }
     f.cols = {}
@@ -581,7 +591,9 @@ local function CreatePanel()
     COL_W = widths[1]
 
     f.plus = {}
+    f.title = title
     panel = f
+    CreateFloatingIcon()
     return f
 end
 function M:OnEnable()
