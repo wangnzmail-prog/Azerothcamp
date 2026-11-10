@@ -164,6 +164,19 @@ boot:SetScript("OnEvent", function(self, event, arg1)
         AzerothCampDB = AzerothCampDB or {}
         CopyDefaults(AzerothCampDB, DEFAULTS)
         ns.db = AzerothCampDB
+        -- 报错记录（只记本插件的）
+        if type(seterrorhandler) == "function" then
+            local prev = geterrorhandler and geterrorhandler()
+            seterrorhandler(function(msg)
+                local text = tostring(msg)
+                if text:find("AzerothCamp", 1, true) and ns.db then
+                    ns.db.errors = ns.db.errors or {}
+                    table.insert(ns.db.errors, 1, date("%m-%d %H:%M:%S") .. "  " .. text:sub(1, 500))
+                    for i = 21, #ns.db.errors do ns.db.errors[i] = nil end
+                end
+                if prev then prev(msg) end
+            end)
+        end
         self:UnregisterEvent("ADDON_LOADED")
     elseif event == "PLAYER_LOGIN" then
         for _, name in ipairs(order) do

@@ -25,6 +25,7 @@ Copy-Item $shim (Join-Path $addon 'Shim.lua') -Force
 Copy-Item (Join-Path $src 'Modules\Camp.lua') (Join-Path $addon 'Camp.lua') -Force
 Copy-Item (Join-Path $src 'Modules\Comms.lua') (Join-Path $addon 'Comms.lua') -Force
 Copy-Item (Join-Path $src 'Data\CampItems.lua') (Join-Path $addon 'Data\CampItems.lua') -Force
+Copy-Item (Join-Path $repo 'standalone\Commands.lua') (Join-Path $addon 'Commands.lua') -Force
 
 $toc = @"
 ## Interface: 120105, 16001
