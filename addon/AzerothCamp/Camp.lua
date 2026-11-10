@@ -276,7 +276,7 @@ local function Refresh()
         local open = expanded[key]
         local mark = open and "[-]" or "[+]"
         local headerIdx = (panel.lineCount or 0) + 1
-        AddLine(string.format("|cff7fb0ff%s %s|r", mark, g.title))
+        AddLine(string.format("  |cff7fb0ff%s %s|r", mark, g.title))
         -- 给标题行挂一个点击区
         if panel.hit then
             local b = panel.hit[headerIdx]
