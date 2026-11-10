@@ -254,7 +254,9 @@ local function Rescan()
     state.groups = final
 
     -- 附近是否已有营火（100 码规则）
-    state.nearFire = (AuraByID(1283391) or AuraByID(1289723) or AuraByID(1229739)) ~= nil
+    local fireAura = AuraByID(1283391) or AuraByID(1289723) or AuraByID(1229739)
+    state.nearFire = fireAura ~= nil
+    state.nearFireName = fireAura and fireAura.name or nil
 
     -- buff
     local buffs = {}
@@ -266,7 +268,7 @@ local function Rescan()
                 if a then break end
             end
         end
-        buffs[#buffs + 1] = { id = b.id, name = b.name, src = b.src, active = a ~= nil,
+        buffs[#buffs + 1] = { id = b.id, name = (a and a.name) or b.name, src = b.src, active = a ~= nil,
             remain = a and (a.expirationTime or 0) - GetTime() or 0,
             stacks = a and a.applications or nil }
     end
