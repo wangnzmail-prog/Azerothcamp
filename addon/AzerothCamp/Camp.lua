@@ -198,7 +198,8 @@ local function PlayerAuras()
             if hit and name then
                 local remain = (data.expirationTime or 0) - GetTime()
                 list[#list + 1] = { name = name, remain = remain, harmful = filter == "HARMFUL",
-                    apps = data.applications }
+                    apps = data.applications,
+                    id = (sid and not ns.Platform.IsSecret(sid)) and sid or nil }
             end
         end
     end
@@ -542,7 +543,14 @@ local function Refresh()
         local parts = {}
         for i = 1, math.min(#auras, 3) do
             local a = auras[i]
-            local color = a.harmful and "|cffff5050" or "|cff4dcc59"
+            local color
+            if a.harmful then
+                color = "|cffff5050"
+            elseif a.id == 429959 then
+                color = ((a.apps or 0) >= 3) and "|cff4dcc59" or "|cfff0d040"
+            else
+                color = "|cff4dcc59"
+            end
             local stacks = (a.apps and a.apps > 1) and string.format("%d层 ", a.apps) or ""
             parts[#parts + 1] = string.format("%s%s|r %s%s", color, a.name, stacks, FormatRemain(a.remain))
         end
