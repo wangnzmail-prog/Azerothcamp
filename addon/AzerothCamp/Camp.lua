@@ -547,7 +547,7 @@ local function Refresh()
         if panel.aura2 then panel.aura2:SetText("") end
     else
         local parts = {}
-        for i = 1, math.min(#auras, 3) do
+        for i = 1, math.min(#auras, 2) do
             local a = auras[i]
             local color
             if a.harmful then
