@@ -201,7 +201,7 @@ end
 
 -- ---------- 面板 ----------
 local panel, rows, ticker, scroll
-local ROW_H = 18
+local ROW_H = 22
 
 local function ApplyCollapse()
     if not panel then return end
@@ -278,21 +278,21 @@ local function Refresh()
         local key = (g.title == L("基础", "Basic")) and "__base" or g.title
         local open = expanded[key]
         local headerIdx = (panel.lineCount or 0) + 1
-        AddLine(string.format("      |cff7fb0ff%s|r", g.title))
+        AddLine(string.format("       |cff7fb0ff%s|r", g.title))
 
         if panel.plus then
             local btn = panel.plus[headerIdx]
             if not btn then
                 btn = CreateFrame("Button", nil, panel.content, "UIPanelButtonTemplate")
-                btn:SetSize(14, 14)
+                btn:SetSize(20, 20)
                 if btn.GetFontString then
                     local fs = btn:GetFontString()
-                    if fs then fs:SetFont(STANDARD_TEXT_FONT, 10, "") end
+                    if fs then fs:SetFont(STANDARD_TEXT_FONT, 14, "") end
                 end
                 panel.plus[headerIdx] = btn
             end
             btn:ClearAllPoints()
-            btn:SetPoint("TOPLEFT", 4, -((headerIdx - 1) * ROW_H + 2))
+            btn:SetPoint("TOPLEFT", 3, -((headerIdx - 1) * ROW_H - 1))
             btn:SetText(open and "-" or "+")
             btn:SetScript("OnClick", function()
                 expanded[key] = not expanded[key]
@@ -305,7 +305,7 @@ local function Refresh()
             local b = panel.hit[headerIdx]
             if not b then
                 b = CreateFrame("Button", nil, panel.content)
-                b:SetHeight(18)
+                b:SetHeight(20)
                 b:SetWidth(290)
                 panel.hit[headerIdx] = b
             end
@@ -410,7 +410,7 @@ local function CreatePanel()
     reloadBtn:SetText("R")
     if reloadBtn.GetFontString then
         local fs = reloadBtn:GetFontString()
-        if fs then fs:SetFont(STANDARD_TEXT_FONT, 10, "") end
+        if fs then fs:SetFont(STANDARD_TEXT_FONT, 14, "") end
     end
     reloadBtn:SetScript("OnClick", function() ReloadUI() end)
     reloadBtn:SetScript("OnEnter", function(self)
