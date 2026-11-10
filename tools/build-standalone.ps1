@@ -31,7 +31,7 @@ Copy-Item (Join-Path $repo 'standalone\LICENSE') (Join-Path $addon 'LICENSE') -F
 Copy-Item (Join-Path $repo 'standalone\README.md') (Join-Path $addon 'README.md') -Force
 
 $toc = @"
-## Interface: 120105, 16001
+## Interface: 16001
 ## Title: AzerothCamp
 ## Title-zhCN: 露营管理
 ## Notes: Camping assistant for WoW Forever (campfire, tent, camp items, party sync)

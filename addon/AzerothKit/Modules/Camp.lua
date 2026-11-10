@@ -16,7 +16,7 @@ end
 local M = C:RegisterModule("Camp", {
     label = L("露营管理", "Camping"),
     defaultEnabled = true,
-    flavors = { retail = true, forever = true },
+    flavors = { forever = true },   -- 正式服没有露营系统
     settings = {
         { key = "scale",     type = "number",  default = 1.0,  min = 0.8, max = 1.6, step = 0.05, label = L("缩放", "Scale") },
         { key = "width",     type = "number",  default = 230,  min = 160, max = 420, step = 5, label = L("宽度", "Width") },

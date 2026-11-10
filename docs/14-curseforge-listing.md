@@ -5,7 +5,7 @@
 | 位置 | 内容 | 何时填 |
 | --- | --- | --- |
 | `AzerothCamp.toc` | `## X-Curse-Project-ID: <id>` | 建项目后，从项目页 URL 里取数字 |
-| CurseForge 项目设置 | 游戏版本勾选 **1.60.1**（WoW Forever）+ **12.1.5**（正式服） | 建项目时 |
+| CurseForge 项目设置 | 游戏版本**只勾 1.60.1**（WoW Forever）——正式服无露营系统 | 建项目时 |
 | 项目设置 | 分类：**Addons → Utility**（或 Camping，若分类可用） | 建项目时 |
 
 TOC 里已留注释占位：`# X-Curse-Project-ID: fill-after-create`。
@@ -36,7 +36,7 @@ COMMANDS
 /ac errors    show the last recorded Lua errors
 
 NOTES
-• Works on WoW Forever 1.60.1 and Retail 12.1.5 from one file.
+• Built for WoW Forever 1.60.1 only — Retail has no camping system.
 • Localised in English, 简体中文 and 繁體中文, following your game language.
 • If AzerothKit is installed, this addon stays inactive and the suite provides the same panel.
 • Party sync only sees players who also run AzerothCamp — the game does not expose other players' bags or cooldowns.
@@ -68,7 +68,7 @@ AzerothCamp —— 露营不用再猜。
 /ac errors    查看最近的 Lua 报错
 
 说明
-• 同一份文件同时支持无限 1.60.1 与正式服 12.1.5。
+• 仅支持《魔兽世界：无限》1.60.1——正式服没有露营系统。
 • 简体中文 / 繁體中文 / English，跟随游戏语言。
 • 若已安装 AzerothKit，本插件自动让位，功能由套件提供。
 • 小队同步只对同样安装本插件的玩家生效——游戏不向插件暴露他人背包与冷却。
@@ -100,7 +100,7 @@ AzerothCamp —— 露營不用再猜。
 /ac errors    查看最近的 Lua 錯誤
 
 說明
-• 同一份檔案同時支援無限 1.60.1 與正式服 12.1.5。
+• 僅支援《魔獸世界：無限》1.60.1——正式服沒有露營系統。
 • 繁體中文／简体中文／English，跟隨遊戲語言。
 • 若已安裝 AzerothKit，本插件自動讓位，功能由套件提供。
 • 小隊同步只對同樣安裝本插件的玩家生效——遊戲不向插件揭露他人背包與冷卻。
