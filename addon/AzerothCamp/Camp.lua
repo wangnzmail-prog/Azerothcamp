@@ -441,7 +441,7 @@ local function Refresh()
             for _, it in ipairs(g.items) do
                 local owned = (it.count or 0) > 0
                 local blocked = (it.group == "fire") and state.nearFire
-                local text = string.format("%s%s|r ×%d %s",
+                local text = string.format("      %s%s|r ×%d %s",
                     (owned and not blocked) and "|cffffffff" or "|cff606060",
                     it.name or tostring(it.id), it.count or 0, it.effect or "")
                 Add(1, text, (owned and not blocked) and nil or DIM)
