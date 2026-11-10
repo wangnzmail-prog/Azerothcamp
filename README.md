@@ -25,6 +25,19 @@
 | `tools/deploy.ps1` | 把示例插件以目录联接方式挂进两个客户端 |
 | `tools/check.ps1` | 校验 TOC Interface 与本机客户端版本是否匹配 |
 
+## 每次改代码后的同步规则
+
+两个插件都以**目录联接**挂进游戏，源码即游戏文件：
+
+```
+AddOns\AzerothKit   -> addon\AzerothKit
+AddOns\AzerothCamp  -> addon\AzerothCamp
+```
+
+- 只改 `.lua`：游戏内 `/reload` 即生效；
+- 改了 `.toc`（增删文件、改版本号）：必须**完全重启客户端**，`/reload` 不重读文件清单；
+- 若联接失效或变成真实拷贝，跑一次：`powershell -ExecutionPolicy Bypass -File tools\sync-game.ps1`
+
 ## 现状速查（本机实测，2026-11-06）
 
 | 项 | 正式服 | 无限 | 时光服（对照） |

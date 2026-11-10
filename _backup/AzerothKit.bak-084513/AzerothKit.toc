@@ -1,0 +1,24 @@
+# AzerothKit · 双版本模块化插件骨架（0.5.0：可拖动布局 + 模块 + 第三方整合）
+# 同时服务 正式服 12.1.5 (120105) 与 无限 1.60.1 (16001)
+# 客户端小版本更新后记得同步这里的 Interface，或改用 tools/check.ps1 检查
+## Interface: 120105, 16001
+## Title: AzerothKit
+## Title-zhCN: 艾泽拉斯工具箱
+## Notes: Modular addon suite skeleton with agent-writable profile and integrations
+## Notes-zhCN: 正式服与无限双版本模块化插件骨架（支持 Agent 写配置与第三方整合）
+## Author: DSH
+## Version: 0.11.0-1
+## SavedVariables: AzerothKitDB
+## AddonCompartmentFunc: AzerothKit_Toggle
+## IconTexture: Interface\Icons\INV_Misc_Map_01
+## DefaultState: enabled
+
+Platform.lua
+Theme.lua
+Core.lua
+Profile.lua
+UI.lua
+Diagnostics.lua
+Modules\Camp.lua
+Modules\Comms.lua
+Integrations\Details.lua
