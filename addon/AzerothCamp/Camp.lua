@@ -215,11 +215,27 @@ local ROW_H = 22
 local function ApplyCollapse()
     if not panel then return end
     local collapsed = C:GetSetting("Camp", "collapsed") and true or false
-    if scroll then
-        if collapsed then scroll:Hide() else scroll:Show() end
+    local w = tonumber(C:GetSetting("Camp", "width")) or 340
+
+    if collapsed then
+        panel:SetSize(32, 32)
+        if panel.title then panel.title:Hide() end
+        if panel.reloadBtn then panel.reloadBtn:Hide() end
+        if panel.scroll then panel.scroll:Hide() end
+        if panel.icon then
+            panel.icon:ClearAllPoints()
+            panel.icon:SetPoint("CENTER", panel, "CENTER", 0, 0)
+        end
+    else
+        panel:SetSize(w, 660)
+        if panel.title then panel.title:Show() end
+        if panel.reloadBtn then panel.reloadBtn:Show() end
+        if panel.scroll then panel.scroll:Show() end
+        if panel.icon then
+            panel.icon:ClearAllPoints()
+            panel.icon:SetPoint("TOPRIGHT", -2, -2)
+        end
     end
-    panel:SetHeight(collapsed and 26 or 660)
-    if panel.toggle then panel.toggle:SetText(collapsed and "+" or "-") end
 end
 
 local function ApplyLayout()
@@ -459,15 +475,27 @@ local function CreatePanel()
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText(L("露营管理", "Camping"))
 
-    local toggle = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    toggle:SetSize(18, 18)
-    toggle:SetPoint("TOPRIGHT", -6, -4)
-    toggle:SetText("-")
-    toggle:SetScript("OnClick", function()
+    f.title = title
+
+    local icon = CreateFrame("Button", nil, f)
+    icon:SetSize(28, 28)
+    icon:SetPoint("TOPRIGHT", -2, -2)
+    local tex = icon:CreateTexture(nil, "ARTWORK")
+    tex:SetAllPoints()
+    local iconPath = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(279981))
+        or "Interface\\Icons\\INV_Misc_Campfire_01"
+    tex:SetTexture(iconPath)
+    icon:SetScript("OnClick", function()
         C:SetSetting("Camp", "collapsed", not (C:GetSetting("Camp", "collapsed") and true or false))
         ApplyCollapse()
     end)
-    f.toggle = toggle
+    icon:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:SetText(L("露营管理（点击折叠/展开）", "Camping (click to collapse)"))
+        GameTooltip:Show()
+    end)
+    icon:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    f.icon = icon
 
     local reloadBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     reloadBtn:SetSize(18, 18)
