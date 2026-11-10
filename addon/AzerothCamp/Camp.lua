@@ -382,10 +382,15 @@ local function Refresh()
 
     AddLine(" ")
     Header(L("露营 buff", "Camp buffs"))
+    local shown = 0
     for _, b in ipairs(state.buffs) do
-        local text = string.format("  %s%s[%s]|r", b.active and "|cffffffff" or "|cff606060", b.name, b.src)
-        if b.active then text = text .. "  " .. FullTime(b.remain) end
-        AddLine(text, b.active and nil or DIM)
+        if b.active then
+            shown = shown + 1
+            AddLine(string.format("  |cffffffff%s[%s]|r  %s", b.name, b.src, FullTime(b.remain)))
+        end
+    end
+    if shown == 0 then
+        AddLine("  " .. L("（无）", "(none)"), DIM)
     end
 
     AddLine(" ")
