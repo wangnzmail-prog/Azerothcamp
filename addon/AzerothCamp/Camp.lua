@@ -309,7 +309,7 @@ local function ApplyCollapse()
             tonumber(C:GetSetting("Camp", "iconX")) or 20,
             tonumber(C:GetSetting("Camp", "iconY")) or -120)
     else
-        panel:SetSize(900, 460)
+        panel:SetSize(1100, 460)
         if panel.title then panel.title:Show() end
         if panel.cols then for _, col in ipairs(panel.cols) do col:Show() end end
         if panel.icon then
@@ -409,6 +409,7 @@ local function Refresh()
 
     -- 列 1：露营物资（可折叠）
     Add(1, "|cffffd700" .. L("露营物资", "Supplies") .. "|r")
+    local usedPlus = {}
     local expanded = (ns.db and ns.db.campExpanded) or {}
     if expanded["__base"] == nil then expanded["__base"] = true end
     if ns.db then ns.db.campExpanded = expanded end
@@ -434,6 +435,7 @@ local function Refresh()
             btn:SetText(open and "-" or "+")
             btn:SetScript("OnClick", function() expanded[key] = not expanded[key] Refresh() end)
             btn:Show()
+            usedPlus[hdrRow] = true
         end
         if open then
             for _, it in ipairs(g.items) do
@@ -477,7 +479,7 @@ local function Refresh()
     -- 隐藏本轮没用的分组按钮（否则会残留成"多出来的 +/-"）
     if panel.plus then
         for idx, b in pairs(panel.plus) do
-            if idx > (colCount[1] or 0) then b:Hide() end
+            if not usedPlus[idx] then b:Hide() end
         end
     end
 
@@ -485,15 +487,17 @@ local function Refresh()
     local maxRows = math.max(colCount[1] or 0, colCount[2] or 0, colCount[3] or 0, colCount[4] or 0)
     if not (C:GetSetting("Camp", "collapsed") and true or false) then
         local h = math.max(180, maxRows * ROW_H + 54)
-        panel:SetHeight(h)
-        if panel.cols then
-            for _, col in ipairs(panel.cols) do col:SetHeight(h - 50) end
+        if math.abs((panel:GetHeight() or 0) - h) > 1 then
+            panel:SetHeight(h)
+            if panel.cols then
+                for _, col in ipairs(panel.cols) do col:SetHeight(h - 50) end
+            end
         end
     end
 end
 
 local function CreatePanel()
-    local f = T:CreatePanel("AzerothCampFrame", UIParent, 900, 460)
+    local f = T:CreatePanel("AzerothCampFrame", UIParent, 1100, 460)
     f:SetFrameStrata("DIALOG")
     f:SetMovable(true)
     f:SetClampedToScreen(true)
@@ -539,7 +543,7 @@ local function CreatePanel()
     f.icon = icon
     f.title = title
 
-    COL_W = math.floor((900 - 24) / 4) - 6
+    COL_W = math.floor((1100 - 24) / 4) - 6
     f.cols = {}
     for i = 1, 4 do
         local col = CreateFrame("Frame", nil, f)
