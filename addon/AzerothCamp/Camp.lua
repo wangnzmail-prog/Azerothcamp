@@ -111,6 +111,8 @@ local function FindToy(id, pattern)
     end
 end
 
+local SECONDARY = { cooking = true, fishing = true, firstaid = true }
+
 local PROF_SKILLLINE = {
     alchemy = 171, blacksmithing = 164, enchanting = 333, engineering = 202,
     herbalism = 182, leatherworking = 165, mining = 186, skinning = 393,
@@ -204,7 +206,7 @@ local function Rescan()
             for k, v in pairs(PROF_SKILLLINE) do
                 if PROF_LABEL[k] == g.title then key = k end
             end
-            if key and learnedSet[PROF_SKILLLINE[key]] then
+            if key and not SECONDARY[key] and learnedSet[PROF_SKILLLINE[key]] then
                 ordered[#ordered + 1] = g
             else
                 rest[#rest + 1] = g
