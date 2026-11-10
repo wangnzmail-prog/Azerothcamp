@@ -1,4 +1,4 @@
-# AzerothCamp · 露营管理
+# AzerothCamp · 露营管理 v1.0.0
 
 《魔兽世界：无限》（WoW Forever）的露营助手：看得见库存、算得清冷却、管得住小队重复放置。
 
