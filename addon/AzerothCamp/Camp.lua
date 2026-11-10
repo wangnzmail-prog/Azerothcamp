@@ -37,7 +37,7 @@ local BUFFS = {
     { id = AURA.benefits,  name = L("露营增益", "Camp Benefits"),    src = L("营火", "Campfire") },
     { id = AURA.wellRested, name = L("精神饱满", "Well-Rested"),     src = L("舒适的睡袋", "Sleeping Bag") },
     { id = AURA.welcoming, ids = { 1229739 }, name = L("温馨营火", "Welcoming Campfire"), src = L("营火", "Campfire") },
-    { id = AURA.nearby,    name = L("营火在附近", "Campfire Nearby"), src = L("营火", "Campfire") },
+
     { id = AURA.boosted,   name = L("强化休息", "Boosted Rest"),      src = L("营地制品", "Camp object") },
 }
 
@@ -382,6 +382,12 @@ local function Refresh()
 
     AddLine(" ")
     Header(L("露营 buff", "Camp buffs"))
+    if state.nearFire then
+        AddLine("  " .. L("营火在附近", "Campfire Nearby"), { 0.30, 0.80, 0.35 })
+    else
+        AddLine("  " .. L("营火在附近", "Campfire Nearby"), { 0.90, 0.30, 0.30 })
+    end
+
     local shown = 0
     for _, b in ipairs(state.buffs) do
         if b.active then
