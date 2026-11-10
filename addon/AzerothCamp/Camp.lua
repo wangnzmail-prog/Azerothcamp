@@ -265,6 +265,9 @@ local function Refresh()
 
     Header(L("1、露营物资", "1. Camping supplies"))
     local expanded = (ns.db and ns.db.campExpanded) or {}
+    if panel.hit then
+        for _, b in pairs(panel.hit) do b:Hide() end
+    end
     if expanded["__base"] == nil then expanded["__base"] = true end
     if ns.db then ns.db.campExpanded = expanded end
 
@@ -302,11 +305,7 @@ local function Refresh()
         end
         end
     end
-    if panel.hit then
-        for idx, b in pairs(panel.hit) do
-            if idx > (panel.lineCount or 0) then b:Hide() end
-        end
-    end
+
 
     AddLine(" ")
     Header(L("2、露营 buff", "2. Camp buffs"))
