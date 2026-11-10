@@ -578,9 +578,16 @@ local function CreatePanel()
     tex:SetTexture(iconPath)
     icon:RegisterForDrag("RightButton")
     icon:SetScript("OnDragStart", function()
-        if C:GetSetting("Camp", "collapsed") then f:StartMoving() end
+        if C:GetSetting("Camp", "collapsed") then
+            f.dragging = true
+            f:StartMoving()
+        else
+            f.dragging = false
+        end
     end)
     icon:SetScript("OnDragStop", function()
+        if not f.dragging then return end   -- 展开态右键不应改写图标坐标
+        f.dragging = false
         f:StopMovingOrSizing()
         local es = f:GetEffectiveScale() / UIParent:GetEffectiveScale()
         C:SetSetting("Camp", "iconX", math.floor(((f:GetLeft() or 0) * es - (UIParent:GetLeft() or 0)) + 0.5))
