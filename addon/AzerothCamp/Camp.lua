@@ -171,6 +171,9 @@ local function Rescan()
     end
     state.groups = groups
 
+    -- 附近是否已有营火（100 码规则）
+    state.nearFire = (AuraByID(1283391) or AuraByID(1289723) or AuraByID(1229739)) ~= nil
+
     -- buff
     local buffs = {}
     for _, b in ipairs(BUFFS) do
@@ -324,10 +327,15 @@ local function Refresh()
         if open then
         for _, it in ipairs(g.items) do
             local owned = (it.count or 0) > 0
+            local blocked = (it.group == "fire") and state.nearFire
             local rowIdx = (panel.lineCount or 0) + 1
             local text = string.format("    %s%s|r ×%d  |cff808080%s|r",
-                owned and "|cffffffff" or "|cff606060", it.name or ("item:" .. tostring(it.id)),
+                (owned and not blocked) and "|cffffffff" or "|cff606060",
+                it.name or ("item:" .. tostring(it.id)),
                 it.count or 0, it.effect or "")
+            if blocked then
+                text = text .. "  |cffcc8040" .. L("（附近已有营火）", "(campfire nearby)") .. "|r"
+            end
             AddLine(text, owned and nil or DIM)
 
             -- 安全按钮：玩家点击才触发，合规且战斗可用
@@ -342,7 +350,11 @@ local function Refresh()
             btn:SetPoint("TOPLEFT", 2, -((rowIdx - 1) * ROW_H))
             btn:RegisterForClicks("AnyUp")
             if not (InCombatLockdown and InCombatLockdown()) then
-                if owned and it.toy then
+                if owned and blocked then
+                    btn:SetAttribute("type", nil)
+                    btn:SetAttribute("item", nil)
+                    btn:SetAttribute("toy", nil)
+                elseif owned and it.toy then
                     btn:SetAttribute("type", "toy")
                     btn:SetAttribute("toy", "item:" .. it.id)
                     btn:SetAttribute("item", nil)
