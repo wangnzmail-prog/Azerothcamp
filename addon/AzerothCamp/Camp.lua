@@ -301,6 +301,7 @@ local function ApplyCollapse()
         panel:SetSize(32, 32)
         if panel.title then panel.title:Hide() end
         if panel.cols then for _, col in ipairs(panel.cols) do col:Hide() end end
+        if panel.reloadBtn then panel.reloadBtn:Hide() end
         if panel.icon then
             panel.icon:ClearAllPoints()
             panel.icon:SetPoint("CENTER", panel, "CENTER", 0, 0)
@@ -312,6 +313,7 @@ local function ApplyCollapse()
         panel:SetSize(1100, 460)
         if panel.title then panel.title:Show() end
         if panel.cols then for _, col in ipairs(panel.cols) do col:Show() end end
+        if panel.reloadBtn then panel.reloadBtn:Show() end
         if panel.icon then
             panel.icon:ClearAllPoints()
             panel.icon:SetPoint("TOPRIGHT", -2, -2)
