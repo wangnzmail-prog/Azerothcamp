@@ -294,6 +294,8 @@ end
 local panel, rows, ticker, scroll
 local ROW_H = 22
 
+local CreateFloatingIcon
+
 local function ApplyCollapse()
     if not panel then return end
     local collapsed = C:GetSetting("Camp", "collapsed") and true or false
@@ -504,7 +506,7 @@ local function SaveIconPos()
     C:SetSetting("Camp", "iconY", math.floor(((floatingIcon:GetTop() or 0) * es - (UIParent:GetTop() or 0)) + 0.5))
 end
 
-local function CreateFloatingIcon()
+CreateFloatingIcon = function()
     if floatingIcon then return floatingIcon end
     local b = CreateFrame("Button", "AzerothCampIcon", UIParent)
     b:SetSize(32, 32)
