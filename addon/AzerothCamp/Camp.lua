@@ -268,15 +268,38 @@ local function Refresh()
     if panel.hit then
         for _, b in pairs(panel.hit) do b:Hide() end
     end
+    if panel.plus then
+        for _, b in pairs(panel.plus) do b:Hide() end
+    end
     if expanded["__base"] == nil then expanded["__base"] = true end
     if ns.db then ns.db.campExpanded = expanded end
 
     for _, g in ipairs(state.groups or {}) do
         local key = (g.title == L("基础", "Basic")) and "__base" or g.title
         local open = expanded[key]
-        local mark = open and "[-]" or "[+]"
         local headerIdx = (panel.lineCount or 0) + 1
-        AddLine(string.format("  |cff7fb0ff%s %s|r", mark, g.title))
+        AddLine(string.format("      |cff7fb0ff%s|r", g.title))
+
+        if panel.plus then
+            local btn = panel.plus[headerIdx]
+            if not btn then
+                btn = CreateFrame("Button", nil, panel.content, "UIPanelButtonTemplate")
+                btn:SetSize(14, 14)
+                if btn.GetFontString then
+                    local fs = btn:GetFontString()
+                    if fs then fs:SetFont(STANDARD_TEXT_FONT, 10, "") end
+                end
+                panel.plus[headerIdx] = btn
+            end
+            btn:ClearAllPoints()
+            btn:SetPoint("TOPLEFT", 4, -((headerIdx - 1) * ROW_H + 2))
+            btn:SetText(open and "-" or "+")
+            btn:SetScript("OnClick", function()
+                expanded[key] = not expanded[key]
+                Refresh()
+            end)
+            btn:Show()
+        end
         -- 给标题行挂一个点击区
         if panel.hit then
             local b = panel.hit[headerIdx]
@@ -408,6 +431,7 @@ local function CreatePanel()
 
     f.scroll = sf
     f.hit = {}
+    f.plus = {}
     f.content = content
     f.offset = 0
     panel = f
