@@ -220,13 +220,36 @@ local function Rescan()
             if PROF_LABEL[k] == g.title then byKey[PROF_SKILLLINE[k]] = g end
         end
     end
+    local function keyOfGroup(g)
+        for k, v in pairs(PROF_SKILLLINE) do
+            if PROF_LABEL[k] == g.title then return k end
+        end
+    end
+
+    local sec, others = {}, {}
+    for _, g in ipairs(rest) do
+        local k = keyOfGroup(g)
+        if k and SECONDARY[k] then sec[#sec + 1] = g else others[#others + 1] = g end
+    end
+
+    local secSorted = {}
+    for _, want in ipairs({ "cooking", "fishing", "firstaid" }) do
+        for _, g in ipairs(sec) do
+            if keyOfGroup(g) == want then secSorted[#secSorted + 1] = g end
+        end
+    end
+
     local final = { base }
     for _, sl in ipairs(learnedOrder) do
         if byKey[sl] then final[#final + 1] = byKey[sl] end
     end
-    if #rest > 0 then
-        rest[1].dividerBefore = true
-        for _, g in ipairs(rest) do final[#final + 1] = g end
+    if #secSorted > 0 then
+        secSorted[1].dividerBefore = true
+        for _, g in ipairs(secSorted) do final[#final + 1] = g end
+    end
+    if #others > 0 then
+        others[1].dividerBefore = true
+        for _, g in ipairs(others) do final[#final + 1] = g end
     end
     state.groups = final
 
