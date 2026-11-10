@@ -51,6 +51,7 @@ $tocs = Get-ChildItem -Path $addonRoot -Filter *.toc -Recurse -ErrorAction Silen
 if (-not $tocs) { throw "No .toc found under $addonRoot" }
 
 $declared = @{}
+$scopes = @{}
 foreach ($toc in $tocs) {
     $line = Select-String -LiteralPath $toc.FullName -Pattern '^##\s*Interface\s*:' | Select-Object -First 1
     if (-not $line) { continue }
@@ -58,6 +59,10 @@ foreach ($toc in $tocs) {
     $ids = @($value.Split(',') | ForEach-Object { $_.Trim() } |
         Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ })
     $declared[$toc.FullName] = $ids
+    $scopeLine = Select-String -LiteralPath $toc.FullName -Pattern '^##\s*X-Clients\s*:' | Select-Object -First 1
+    $scope = $null
+    if ($scopeLine) { $scope = (($scopeLine.Line -split ':', 2)[1]).Trim() }
+    $scopes[$toc.FullName] = $scope
 }
 
 # ---------- 3. compare ----------
@@ -71,8 +76,11 @@ foreach ($toc in $tocs) {
         }
         continue
     }
+    $prodClient = @{ 'wow' = 'retail'; 'wowf' = 'forever'; 'wow_classic_titan' = 'titan' }
     foreach ($c in $installed) {
-        $inScope = $Products -contains $c.Product
+        $sc = $scopes[$toc.FullName]
+        $scopeOk = (-not $sc) -or ($prodClient[$c.Product] -and ($sc -match $prodClient[$c.Product]))
+        $inScope = ($Products -contains $c.Product) -and $scopeOk
         if (-not $inScope) {
             $rows += [pscustomobject]@{
                 TOC      = $toc.Name
