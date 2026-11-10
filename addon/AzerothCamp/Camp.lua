@@ -24,6 +24,8 @@ local M = C:RegisterModule("Camp", {
         { key = "relPoint",  type = "string",  default = "TOPLEFT", hidden = true },
         { key = "x",         type = "number",  default = 20,   hidden = true },
         { key = "y",         type = "number",  default = -120, hidden = true },
+        { key = "iconX",     type = "number",  default = 20,   hidden = true },
+        { key = "iconY",     type = "number",  default = -120, hidden = true },
     },
 })
 
@@ -226,6 +228,9 @@ local function ApplyCollapse()
             panel.icon:ClearAllPoints()
             panel.icon:SetPoint("CENTER", panel, "CENTER", 0, 0)
         end
+        T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
+            tonumber(C:GetSetting("Camp", "iconX")) or 20,
+            tonumber(C:GetSetting("Camp", "iconY")) or -120)
     else
         panel:SetSize(w, 660)
         if panel.title then panel.title:Show() end
@@ -235,6 +240,9 @@ local function ApplyCollapse()
             panel.icon:ClearAllPoints()
             panel.icon:SetPoint("TOPRIGHT", -2, -2)
         end
+        T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
+            tonumber(C:GetSetting("Camp", "x")) or 20,
+            tonumber(C:GetSetting("Camp", "y")) or -120)
     end
 end
 
@@ -485,7 +493,18 @@ local function CreatePanel()
     local iconPath = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(279981))
         or "Interface\\Icons\\INV_Misc_Campfire_01"
     tex:SetTexture(iconPath)
-    icon:SetScript("OnClick", function()
+    icon:RegisterForDrag("RightButton")
+    icon:SetScript("OnDragStart", function()
+        if C:GetSetting("Camp", "collapsed") then f:StartMoving() end
+    end)
+    icon:SetScript("OnDragStop", function()
+        f:StopMovingOrSizing()
+        local es = f:GetEffectiveScale() / UIParent:GetEffectiveScale()
+        C:SetSetting("Camp", "iconX", math.floor(((f:GetLeft() or 0) * es - (UIParent:GetLeft() or 0)) + 0.5))
+        C:SetSetting("Camp", "iconY", math.floor(((f:GetTop() or 0) * es - (UIParent:GetTop() or 0)) + 0.5))
+    end)
+    icon:SetScript("OnClick", function(_, button)
+        if button == "RightButton" then return end
         C:SetSetting("Camp", "collapsed", not (C:GetSetting("Camp", "collapsed") and true or false))
         ApplyCollapse()
     end)
