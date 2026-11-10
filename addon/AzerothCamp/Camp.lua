@@ -36,7 +36,7 @@ local TOY_ITEM = 288185
 local BUFFS = {
     { id = AURA.benefits,  name = L("露营增益", "Camp Benefits"),    src = L("营火", "Campfire") },
     { id = AURA.wellRested, name = L("精神饱满", "Well-Rested"),     src = L("舒适的睡袋", "Sleeping Bag") },
-    { id = AURA.welcoming, name = L("温馨营火", "Welcoming Campfire"), src = L("营火", "Campfire") },
+    { id = AURA.welcoming, ids = { 1229739 }, name = L("温馨营火", "Welcoming Campfire"), src = L("营火", "Campfire") },
     { id = AURA.nearby,    name = L("营火在附近", "Campfire Nearby"), src = L("营火", "Campfire") },
     { id = AURA.boosted,   name = L("强化休息", "Boosted Rest"),      src = L("营地制品", "Camp object") },
 }
@@ -178,6 +178,12 @@ local function Rescan()
     local buffs = {}
     for _, b in ipairs(BUFFS) do
         local a = AuraByID(b.id)
+        if not a and b.ids then
+            for _, alt in ipairs(b.ids) do
+                a = AuraByID(alt)
+                if a then break end
+            end
+        end
         buffs[#buffs + 1] = { id = b.id, name = b.name, src = b.src, active = a ~= nil,
             remain = a and (a.expirationTime or 0) - GetTime() or 0,
             stacks = a and a.applications or nil }
