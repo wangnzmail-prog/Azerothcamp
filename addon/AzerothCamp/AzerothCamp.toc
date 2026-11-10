@@ -5,7 +5,7 @@
 ## Notes: Camping assistant for WoW Forever: fire kits, tents, camp items, party sync
 ## Notes-zhCN: 无限露营助手：营火/帐篷/营地制品/小队同步
 ## Author: DSH
-## Version: 1.0.5-1
+## Version: 1.0.6-1
 ## SavedVariables: AzerothCampDB
 ## X-Clients: forever
 ## X-Provides: camp

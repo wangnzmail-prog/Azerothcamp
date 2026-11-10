@@ -127,8 +127,11 @@ local function LearnedSkillLines()
     local p = { GetProfessions() }
     for _, idx in ipairs(p) do
         if idx then
-            local ok, skillLine = pcall(function() return select(7, GetProfessionInfo(idx)) end)
-            if ok and skillLine then list[#list + 1] = skillLine end
+            local ok, skillLine, pname = pcall(function()
+                local name, _, _, _, _, _, sl = GetProfessionInfo(idx)
+                return sl, name
+            end)
+            if ok and skillLine then list[#list + 1] = { skillLine = skillLine, name = pname } end
         end
     end
     return list
@@ -187,7 +190,8 @@ local function Rescan()
             local key = it.prof or "other"
             local g = byProf[key]
             if not g then
-                g = { title = PROF_LABEL[key] or key, items = {} }
+                local localName = state.profNames and state.profNames[PROF_SKILLLINE[key] or -1]
+                g = { key = key, title = localName or PROF_LABEL[key] or key, items = {} }
                 byProf[key] = g
                 groups[#groups + 1] = g
             end
@@ -196,8 +200,18 @@ local function Rescan()
     end
     -- 已学专业优先，其余用分隔线隔开
     local learnedOrder = LearnedSkillLines()
+    state.profNames = {}
+    for _, e in ipairs(learnedOrder) do
+        if e.skillLine then state.profNames[e.skillLine] = e.name end
+    end
+    -- 分组标题换成客户端本地化专业名
+    for _, g in ipairs(groups) do
+        if g.key and PROF_SKILLLINE[g.key] and state.profNames[PROF_SKILLLINE[g.key]] then
+            g.title = state.profNames[PROF_SKILLLINE[g.key]]
+        end
+    end
     local learnedSet = {}
-    for _, sl in ipairs(learnedOrder) do learnedSet[sl] = true end
+    for _, e in ipairs(learnedOrder) do learnedSet[e.skillLine] = true end
 
     local ordered, rest = {}, {}
     for _, g in ipairs(groups) do
@@ -221,9 +235,7 @@ local function Rescan()
         end
     end
     local function keyOfGroup(g)
-        for k, v in pairs(PROF_SKILLLINE) do
-            if PROF_LABEL[k] == g.title then return k end
-        end
+        return g.key
     end
 
     local sec, others = {}, {}
@@ -240,8 +252,8 @@ local function Rescan()
     end
 
     local final = { base }
-    for _, sl in ipairs(learnedOrder) do
-        if byKey[sl] then final[#final + 1] = byKey[sl] end
+    for _, e in ipairs(learnedOrder) do
+        if byKey[e.skillLine] then final[#final + 1] = byKey[e.skillLine] end
     end
     if #secSorted > 0 then
         secSorted[1].dividerBefore = true
