@@ -559,6 +559,7 @@ end
 local function CreatePanel()
     local f = T:CreatePanel("AzerothCampFrame", UIParent, 340, 660)
     f:SetFrameStrata("DIALOG")
+    f:SetMovable(true)
     f:SetClampedToScreen(true)
 
     local title = T:CreateText(f, 12, false)
@@ -631,6 +632,7 @@ local function CreatePanel()
     f.offset = 0
     panel = f
 
+    f:SetMovable(true)
     f:SetClampedToScreen(true)
     return f
 end
