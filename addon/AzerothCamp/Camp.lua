@@ -109,6 +109,8 @@ local function FindToy(id, pattern)
     end
 end
 
+local PROF_LABEL = {}
+
 local function Rescan()
     local bags = ScanBags()
     local items = {}
@@ -248,7 +250,7 @@ local function Header(text)
 end
 
 local DIM = { 0.45, 0.45, 0.48 }
-local PROF_LABEL = {
+PROF_LABEL = {
     alchemy = L("炼金", "Alchemy"), blacksmithing = L("锻造", "Blacksmithing"),
     enchanting = L("附魔", "Enchanting"), engineering = L("工程", "Engineering"),
     herbalism = L("草药", "Herbalism"), leatherworking = L("制皮", "Leatherworking"),
@@ -262,14 +264,46 @@ local function Refresh()
     panel.lineCount = 0
 
     Header(L("1、露营物资", "1. Camping supplies"))
+    local expanded = (ns.db and ns.db.campExpanded) or {}
+    if expanded["__base"] == nil then expanded["__base"] = true end
+    if ns.db then ns.db.campExpanded = expanded end
+
     for _, g in ipairs(state.groups or {}) do
-        AddLine("|cff7fb0ff[" .. g.title .. "]|r")
+        local key = (g.title == L("基础", "Basic")) and "__base" or g.title
+        local open = expanded[key]
+        local mark = open and "[-]" or "[+]"
+        local headerIdx = (panel.lineCount or 0) + 1
+        AddLine(string.format("|cff7fb0ff%s %s|r", mark, g.title))
+        -- 给标题行挂一个点击区
+        if panel.hit then
+            local b = panel.hit[headerIdx]
+            if not b then
+                b = CreateFrame("Button", nil, panel.content)
+                b:SetHeight(14)
+                b:SetWidth(290)
+                panel.hit[headerIdx] = b
+            end
+            b:ClearAllPoints()
+            b:SetPoint("TOPLEFT", 2, -((headerIdx - 1) * ROW_H))
+            b:SetScript("OnClick", function()
+                expanded[key] = not open
+                Refresh()
+            end)
+            b:Show()
+        end
+        if open then
         for _, it in ipairs(g.items) do
             local owned = (it.count or 0) > 0
             local text = string.format("  %s%s|r ×%d  |cff808080%s|r",
                 owned and "|cffffffff" or "|cff606060", it.name or ("item:" .. tostring(it.id)),
                 it.count or 0, it.effect or "")
             AddLine(text, owned and nil or DIM)
+        end
+        end
+    end
+    if panel.hit then
+        for idx, b in pairs(panel.hit) do
+            if idx > (panel.lineCount or 0) then b:Hide() end
         end
     end
 
@@ -313,6 +347,12 @@ local function Refresh()
         end
     end
 
+    for i = (panel.lineCount or 0) + 1, #rows do
+        if rows[i] then rows[i]:Hide() end
+    end
+    for i = 1, (panel.lineCount or 0) do
+        if rows[i] then rows[i]:Show() end
+    end
     panel.content:SetHeight(math.max(10, panel.lineCount * ROW_H))
 end
 
@@ -341,6 +381,21 @@ local function CreatePanel()
     end)
     f.toggle = toggle
 
+    local reloadBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    reloadBtn:SetSize(18, 18)
+    reloadBtn:SetPoint("TOPRIGHT", -26, -4)
+    reloadBtn:SetText("R")
+    if reloadBtn.GetFontString then
+        local fs = reloadBtn:GetFontString()
+        if fs then fs:SetFont(STANDARD_TEXT_FONT, 10, "") end
+    end
+    reloadBtn:SetScript("OnClick", function() ReloadUI() end)
+    reloadBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Reload UI"); GameTooltip:Show()
+    end)
+    reloadBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    f.reloadBtn = reloadBtn
+
     local sf = CreateFrame("ScrollFrame", "AzerothCampScroll", f)
     sf:SetPoint("TOPLEFT", 6, -26)
     sf:SetPoint("BOTTOMRIGHT", -6, 6)
@@ -352,6 +407,7 @@ local function CreatePanel()
     sf:SetScrollChild(content)
 
     f.scroll = sf
+    f.hit = {}
     f.content = content
     f.offset = 0
     panel = f
