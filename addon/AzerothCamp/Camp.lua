@@ -309,7 +309,7 @@ local function ApplyCollapse()
             tonumber(C:GetSetting("Camp", "iconX")) or 20,
             tonumber(C:GetSetting("Camp", "iconY")) or -120)
     else
-        panel:SetSize(760, 460)
+        panel:SetSize(900, 460)
         if panel.title then panel.title:Show() end
         if panel.cols then for _, col in ipairs(panel.cols) do col:Show() end end
         if panel.icon then
@@ -317,7 +317,13 @@ local function ApplyCollapse()
             panel.icon:SetPoint("TOPRIGHT", -2, -2)
         end
         panel:ClearAllPoints()
-        panel:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        local px = tonumber(C:GetSetting("Camp", "x"))
+        local py = tonumber(C:GetSetting("Camp", "y"))
+        if px and py then
+            panel:SetPoint("TOPLEFT", UIParent, "TOPLEFT", px, py)
+        else
+            panel:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        end
     end
 end
 local function ApplyLayout()
@@ -410,7 +416,7 @@ local function Refresh()
         if g.dividerBefore then Add(1, "|cff3a3a3a---------|r") end
         local key = (g.title == L("基础", "Basic")) and "__base" or g.title
         local open = expanded[key]
-        Add(1, string.format("|cff7fb0ff%s %s|r", open and "-" or "+", g.title))
+        Add(1, string.format("   |cff7fb0ff%s|r", g.title))
         local hdrRow = colCount[1]
         if panel.plus then
             local btn = panel.plus[hdrRow]
@@ -424,7 +430,7 @@ local function Refresh()
                 panel.plus[hdrRow] = btn
             end
             btn:ClearAllPoints()
-            btn:SetPoint("TOPLEFT", -2, -((hdrRow - 1) * ROW_H + 1))
+            btn:SetPoint("TOPLEFT", 0, -((hdrRow - 1) * ROW_H))
             btn:SetText(open and "-" or "+")
             btn:SetScript("OnClick", function() expanded[key] = not expanded[key] Refresh() end)
             btn:Show()
@@ -467,14 +473,40 @@ local function Refresh()
             (tonumber(p.cd) or 0) > 0 and FullTime(p.cd) or L("可用", "ready")))
     end
     if not any then Add(4, "（无数据）", DIM) end
+
+    -- 隐藏本轮没用的分组按钮（否则会残留成"多出来的 +/-"）
+    if panel.plus then
+        for idx, b in pairs(panel.plus) do
+            if idx > (colCount[1] or 0) then b:Hide() end
+        end
+    end
+
+    -- 高度随内容增长
+    local maxRows = math.max(colCount[1] or 0, colCount[2] or 0, colCount[3] or 0, colCount[4] or 0)
+    if not (C:GetSetting("Camp", "collapsed") and true or false) then
+        local h = math.max(180, maxRows * ROW_H + 54)
+        panel:SetHeight(h)
+        if panel.cols then
+            for _, col in ipairs(panel.cols) do col:SetHeight(h - 50) end
+        end
+    end
 end
 
 local function CreatePanel()
-    local f = T:CreatePanel("AzerothCampFrame", UIParent, 760, 460)
+    local f = T:CreatePanel("AzerothCampFrame", UIParent, 900, 460)
     f:SetFrameStrata("DIALOG")
     f:SetMovable(true)
     f:SetClampedToScreen(true)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    f:EnableMouse(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    f:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local es = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+        C:SetSetting("Camp", "x", math.floor(((self:GetLeft() or 0) * es - (UIParent:GetLeft() or 0)) + 0.5))
+        C:SetSetting("Camp", "y", math.floor(((self:GetTop() or 0) * es - (UIParent:GetTop() or 0)) + 0.5))
+    end)
 
     local title = T:CreateText(f, 12, false)
     title:SetPoint("TOPLEFT", 10, -8)
@@ -507,7 +539,7 @@ local function CreatePanel()
     f.icon = icon
     f.title = title
 
-    COL_W = math.floor((760 - 24) / 4) - 6
+    COL_W = math.floor((900 - 24) / 4) - 6
     f.cols = {}
     for i = 1, 4 do
         local col = CreateFrame("Frame", nil, f)
