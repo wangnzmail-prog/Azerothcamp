@@ -320,9 +320,8 @@ local function ApplyCollapse()
             panel.icon:ClearAllPoints()
             panel.icon:SetPoint("TOPRIGHT", -2, -2)
         end
-        T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
-            tonumber(C:GetSetting("Camp", "x")) or 20,
-            tonumber(C:GetSetting("Camp", "y")) or -120)
+        panel:ClearAllPoints()
+        panel:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     end
 end
 
@@ -632,14 +631,7 @@ local function CreatePanel()
     f.offset = 0
     panel = f
 
-    T:MakeMovable(f, function()
-        local es = f:GetEffectiveScale() / UIParent:GetEffectiveScale()
-        local nx = (f:GetLeft() or 0) * es - (UIParent:GetLeft() or 0)
-        local ny = (f:GetTop() or 0) * es - (UIParent:GetTop() or 0)
-        C:SetSetting("Camp", "x", math.floor(nx + 0.5))
-        C:SetSetting("Camp", "y", math.floor(ny + 0.5))
-        ApplyLayout()
-    end)
+    f:SetClampedToScreen(true)
     return f
 end
 
