@@ -7,7 +7,9 @@ local T = ns.Theme
 
 local isCN = (ns.Platform.locale == "zhCN" or ns.Platform.locale == "zhTW")
 local function L(zh, en)
-    if isCN then return zh end
+    local loc = ns.Platform.locale
+    if loc == "zhTW" then return (ns.TW and ns.TW[zh]) or zh end
+    if loc == "zhCN" then return zh end
     return en
 end
 

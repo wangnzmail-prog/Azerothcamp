@@ -26,6 +26,9 @@ Copy-Item (Join-Path $src 'Modules\Camp.lua') (Join-Path $addon 'Camp.lua') -For
 Copy-Item (Join-Path $src 'Modules\Comms.lua') (Join-Path $addon 'Comms.lua') -Force
 Copy-Item (Join-Path $src 'Data\CampItems.lua') (Join-Path $addon 'Data\CampItems.lua') -Force
 Copy-Item (Join-Path $repo 'standalone\Commands.lua') (Join-Path $addon 'Commands.lua') -Force
+Copy-Item (Join-Path $repo 'addon\AzerothKit\Locales.lua') (Join-Path $addon 'Locales.lua') -Force
+Copy-Item (Join-Path $repo 'standalone\LICENSE') (Join-Path $addon 'LICENSE') -Force
+Copy-Item (Join-Path $repo 'standalone\README.md') (Join-Path $addon 'README.md') -Force
 
 $toc = @"
 ## Interface: 120105, 16001
