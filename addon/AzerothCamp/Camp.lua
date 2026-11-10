@@ -612,7 +612,7 @@ function M:OnEnable()
         CreatePanel()
     end
     ApplyLayout()
-    panel:Show()
+    ApplyCollapse()   -- 由折叠状态决定显示面板还是只留图标（不能无条件 Show）
 
     Rescan()
     Refresh()
