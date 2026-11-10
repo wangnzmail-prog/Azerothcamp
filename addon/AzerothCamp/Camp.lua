@@ -140,7 +140,7 @@ local function Rescan()
             local row = bags[id]
             items[#items + 1] = { id = id, name = ItemName(id), count = row and row.count or 0,
                 bag = row and row.bag, slot = row and row.slot,
-                effect = p.effect .. string.format(" T%d", tier), group = "prof", prof = p.key }
+                effect = p.effect, group = "prof", prof = p.key }
         end
     end
     for _, o in ipairs(ns.CampData.cooking) do
@@ -201,7 +201,7 @@ end
 
 -- ---------- 面板 ----------
 local panel, rows, ticker, scroll
-local ROW_H = 14
+local ROW_H = 18
 
 local function ApplyCollapse()
     if not panel then return end
@@ -227,7 +227,7 @@ end
 local function Row(i)
     if not rows[i] then
         local fs
-        if i == 1 or rows[i - 1] then fs = panel.content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall") end
+        if i == 1 or rows[i - 1] then fs = panel.content:CreateFontString(nil, "ARTWORK", "GameFontHighlight") end
         fs = fs or panel.content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
         fs:SetJustifyH("LEFT")
         fs:SetWidth(280)
@@ -279,7 +279,7 @@ local function Refresh()
             local b = panel.hit[headerIdx]
             if not b then
                 b = CreateFrame("Button", nil, panel.content)
-                b:SetHeight(14)
+                b:SetHeight(18)
                 b:SetWidth(290)
                 panel.hit[headerIdx] = b
             end
