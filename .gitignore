@@ -7,3 +7,4 @@ _acl-recovery/
 # 游戏内产生的临时文件
 *.log
 _ref/
+dist/
