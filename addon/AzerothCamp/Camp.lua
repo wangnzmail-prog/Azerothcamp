@@ -519,8 +519,8 @@ local function CreatePanel()
         C:SetSetting("Camp", "y", math.floor(((self:GetTop() or 0) * es - (UIParent:GetTop() or 0)) + 0.5))
     end)
 
-    local title = T:CreateText(f, 12, false)
-    title:SetPoint("TOPLEFT", 10, -8)
+    local title = T:CreateText(f, 16, false)
+    title:SetPoint("TOPLEFT", 12, -6)
     title:SetText(L("露营管理", "Camping"))
 
     local icon = CreateFrame("Button", nil, f)
@@ -547,6 +547,21 @@ local function CreatePanel()
         C:SetSetting("Camp", "collapsed", not (C:GetSetting("Camp", "collapsed") and true or false))
         ApplyCollapse()
     end)
+    local reloadBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    reloadBtn:SetSize(28, 28)
+    reloadBtn:SetPoint("TOPRIGHT", -34, -2)
+    reloadBtn:SetText("R")
+    if reloadBtn.GetFontString then
+        local fs = reloadBtn:GetFontString()
+        if fs then fs:SetFont(STANDARD_TEXT_FONT, 14, "") end
+    end
+    reloadBtn:SetScript("OnClick", function() ReloadUI() end)
+    reloadBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Reload UI"); GameTooltip:Show()
+    end)
+    reloadBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    f.reloadBtn = reloadBtn
+
     f.icon = icon
     f.title = title
 
@@ -555,7 +570,7 @@ local function CreatePanel()
     local x = 8
     for i = 1, 3 do
         local col = CreateFrame("Frame", nil, f)
-        col:SetPoint("TOPLEFT", x, -30)
+        col:SetPoint("TOPLEFT", x, -38)
         col:SetSize(widths[i], 410)
         col.rows = {}
         f.cols[i] = col

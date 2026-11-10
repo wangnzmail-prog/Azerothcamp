@@ -2,7 +2,7 @@
 -- 若已安装 AzerothKit：本插件让位，注册接口变成空壳，避免出现两个面板。
 local ADDON, ns = ...
 
-ns.VERSION = "0.27.1"
+ns.VERSION = "0.27.2"
 ns.Platform = {
     locale = GetLocale and GetLocale() or "enUS",
     flavor = "forever",
