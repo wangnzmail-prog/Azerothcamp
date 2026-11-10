@@ -263,7 +263,7 @@ local function Refresh()
     if not panel then return end
     panel.lineCount = 0
 
-    Header(L("1、露营物资", "1. Camping supplies"))
+    Header(L("露营物资", "Camping supplies"))
     local expanded = (ns.db and ns.db.campExpanded) or {}
     if panel.hit then
         for _, b in pairs(panel.hit) do b:Hide() end
@@ -298,7 +298,7 @@ local function Refresh()
         if open then
         for _, it in ipairs(g.items) do
             local owned = (it.count or 0) > 0
-            local text = string.format("  %s%s|r ×%d  |cff808080%s|r",
+            local text = string.format("    %s%s|r ×%d  |cff808080%s|r",
                 owned and "|cffffffff" or "|cff606060", it.name or ("item:" .. tostring(it.id)),
                 it.count or 0, it.effect or "")
             AddLine(text, owned and nil or DIM)
@@ -308,15 +308,15 @@ local function Refresh()
 
 
     AddLine(" ")
-    Header(L("2、露营 buff", "2. Camp buffs"))
+    Header(L("露营 buff", "Camp buffs"))
     for _, b in ipairs(state.buffs) do
-        local text = string.format("%s%s[%s]|r", b.active and "|cffffffff" or "|cff606060", b.name, b.src)
+        local text = string.format("  %s%s[%s]|r", b.active and "|cffffffff" or "|cff606060", b.name, b.src)
         if b.active then text = text .. "  " .. FullTime(b.remain) end
         AddLine(text, b.active and nil or DIM)
     end
 
     AddLine(" ")
-    Header(L("3、其他经验 buff", "3. Other XP buffs"))
+    Header(L("其他经验 buff", "Other XP buffs"))
     if #state.xpbuffs == 0 then
         AddLine("  " .. L("（无）", "(none)"), DIM)
     else
@@ -326,7 +326,7 @@ local function Refresh()
     end
 
     AddLine(" ")
-    Header(L("4、队伍", "4. Party"))
+    Header(L("队伍", "Party"))
     local any = false
     for name, p in pairs(state.peers) do
         any = true
