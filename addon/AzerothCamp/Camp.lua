@@ -271,6 +271,9 @@ local function Refresh()
     if panel.plus then
         for _, b in pairs(panel.plus) do b:Hide() end
     end
+    if panel.itemBtns then
+        for _, b in pairs(panel.itemBtns) do b:Hide() end
+    end
     if expanded["__base"] == nil then expanded["__base"] = true end
     if ns.db then ns.db.campExpanded = expanded end
 
@@ -321,10 +324,39 @@ local function Refresh()
         if open then
         for _, it in ipairs(g.items) do
             local owned = (it.count or 0) > 0
+            local rowIdx = (panel.lineCount or 0) + 1
             local text = string.format("    %s%s|r ×%d  |cff808080%s|r",
                 owned and "|cffffffff" or "|cff606060", it.name or ("item:" .. tostring(it.id)),
                 it.count or 0, it.effect or "")
             AddLine(text, owned and nil or DIM)
+
+            -- 安全按钮：玩家点击才触发，合规且战斗可用
+            local btn = panel.itemBtns[rowIdx]
+            if not btn then
+                btn = CreateFrame("Button", nil, panel.content, "SecureActionButtonTemplate")
+                btn:SetHeight(ROW_H - 2)
+                btn:SetWidth(320)
+                panel.itemBtns[rowIdx] = btn
+            end
+            btn:ClearAllPoints()
+            btn:SetPoint("TOPLEFT", 2, -((rowIdx - 1) * ROW_H))
+            btn:RegisterForClicks("AnyUp")
+            if not (InCombatLockdown and InCombatLockdown()) then
+                if owned and it.toy then
+                    btn:SetAttribute("type", "toy")
+                    btn:SetAttribute("toy", "item:" .. it.id)
+                    btn:SetAttribute("item", nil)
+                elseif owned then
+                    btn:SetAttribute("type", "item")
+                    btn:SetAttribute("item", "item:" .. it.id)
+                    btn:SetAttribute("toy", nil)
+                else
+                    btn:SetAttribute("type", nil)
+                    btn:SetAttribute("item", nil)
+                    btn:SetAttribute("toy", nil)
+                end
+            end
+            btn:Show()
         end
         end
     end
@@ -432,6 +464,7 @@ local function CreatePanel()
     f.scroll = sf
     f.hit = {}
     f.plus = {}
+    f.itemBtns = {}
     f.content = content
     f.offset = 0
     panel = f
@@ -458,6 +491,8 @@ function M:OnEnable()
     Rescan()
     Refresh()
 
+    C:On("PLAYER_REGEN_ENABLED", Refresh)
+
     if not ticker then
         ticker = C_Timer.NewTicker(1, function()
             if panel and panel:IsShown() then
@@ -469,6 +504,7 @@ function M:OnEnable()
 end
 
 function M:OnDisable()
+    C:Off("PLAYER_REGEN_ENABLED", Refresh)
     if ticker then ticker:Cancel() ticker = nil end
     if panel then panel:Hide() end
 end
