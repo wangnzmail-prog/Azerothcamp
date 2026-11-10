@@ -52,6 +52,7 @@ end
 for _, o in ipairs(ns.CampData.cooking) do
     lookup[o.item] = { prof = "cooking", effect = o.effect, tier = 1 }
 end
+lookup[ns.CampData.sleepingBag] = { prof = "bag", effect = "睡袋 每层+3%经验", tier = 1 }
 for _, c in ipairs(ns.CampData.campfires) do
     lookup[c.item] = { prof = "cooking", effect = string.format("营火(%d格)", c.slots), tier = 1, campfire = c }
 end

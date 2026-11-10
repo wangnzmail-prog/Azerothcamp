@@ -29,7 +29,7 @@ local M = C:RegisterModule("Camp", {
         { key = "patternAid",   type = "string", default = "急救包",     hidden = true },
         { key = "patternToy",   type = "string", default = "探险帐篷",   hidden = true },
         { key = "patternAura",  type = "string", default = "帐篷,营地,休息,篝火,火堆,Nearby,Tent,Camp,Rested", hidden = true },
-        { key = "auraIDs",      type = "string", default = "1229741", hidden = true },
+        { key = "auraIDs",      type = "string", default = "1229741,429959", hidden = true },
         { key = "patternFireAura", type = "string", default = "营火,篝火,Campfire,Fire", hidden = true },
         { key = "campfireIDs", type = "string", default = "1229739,1283391", hidden = true },
         { key = "point",     type = "string", default = "TOPLEFT", hidden = true },
@@ -197,7 +197,8 @@ local function PlayerAuras()
             end
             if hit and name then
                 local remain = (data.expirationTime or 0) - GetTime()
-                list[#list + 1] = { name = name, remain = remain, harmful = filter == "HARMFUL" }
+                list[#list + 1] = { name = name, remain = remain, harmful = filter == "HARMFUL",
+                    apps = data.applications }
             end
         end
     end
@@ -542,7 +543,8 @@ local function Refresh()
         for i = 1, math.min(#auras, 3) do
             local a = auras[i]
             local color = a.harmful and "|cffff5050" or "|cff4dcc59"
-            parts[#parts + 1] = string.format("%s%s|r %s", color, a.name, FormatRemain(a.remain))
+            local stacks = (a.apps and a.apps > 1) and string.format("%d层 ", a.apps) or ""
+            parts[#parts + 1] = string.format("%s%s|r %s%s", color, a.name, stacks, FormatRemain(a.remain))
         end
         panel.aura:SetText(table.concat(parts, "  "))
     end
