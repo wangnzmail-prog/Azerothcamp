@@ -761,6 +761,25 @@ local function OnCombatEnd()
         panel:Show()
         wasShown = false
     end
+    -- 去重建议：优先我带的、队友都没带的专业制品
+    if panel.otherTitle then
+        local peers = ns.CampPeers or {}
+        local covered = {}
+        for _, pr in pairs(peers) do
+            if pr.cap and pr.cap ~= "none" then covered[pr.cap] = true end
+        end
+        local pick
+        for prof, row in pairs(state.others or {}) do
+            if not covered[prof] then pick = row break end
+        end
+        if pick then
+            panel.otherTitle:SetText(string.format("%s  |cff808080%s %s|r",
+                L("其他营地制品", "Other camp items"), L("建议放", "suggest"), tostring(pick.name)))
+        else
+            panel.otherTitle:SetText(L("其他营地制品", "Other camp items"))
+        end
+    end
+
     -- 其他营地制品（按 itemID 识别，与语言无关）
     if panel.otherLines then
         local list = {}
