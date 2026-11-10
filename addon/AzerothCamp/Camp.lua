@@ -373,7 +373,7 @@ PROF_LABEL = {
 }
 
 local COL_W = 0
-local colCount = { 0, 0, 0, 0 }
+local colCount = { 0, 0, 0 }
 
 local function Add(col, text, color)
     colCount[col] = (colCount[col] or 0) + 1
@@ -396,9 +396,9 @@ local function Add(col, text, color)
 end
 
 local function ClearColumns()
-    colCount = { 0, 0, 0, 0 }
+    colCount = { 0, 0, 0 }
     if not panel or not panel.cols then return end
-    for i = 1, 4 do
+    for i = 1, 3 do
         for _, fs in ipairs(panel.cols[i].rows or {}) do fs:Hide() end
     end
 end
@@ -460,21 +460,22 @@ local function Refresh()
     end
 
     -- 列 3：其他经验 buff
-    Add(3, "|cffffd700" .. L("其他经验 buff", "Other XP") .. "|r")
-    if #state.xpbuffs == 0 then Add(3, "（无）", DIM) end
+    Add(2, " ")
+    Add(2, "|cffffd700" .. L("其他经验 buff", "Other XP") .. "|r")
+    if #state.xpbuffs == 0 then Add(2, "（无）", DIM) end
     for _, x in ipairs(state.xpbuffs) do
-        Add(3, string.format("%s %s", x.name, FullTime(x.remain)))
+        Add(2, string.format("%s %s", x.name, FullTime(x.remain)))
     end
 
     -- 列 4：队伍
-    Add(4, "|cffffd700" .. L("队伍", "Party") .. "|r")
+    Add(3, "|cffffd700" .. L("队伍", "Party") .. "|r")
     local any = false
     for name, p in pairs(state.peers) do
         any = true
-        Add(4, string.format("%s %s %s", name, tostring(p.cap or "?"),
+        Add(3, string.format("%s %s %s", name, tostring(p.cap or "?"),
             (tonumber(p.cd) or 0) > 0 and FullTime(p.cd) or L("可用", "ready")))
     end
-    if not any then Add(4, "（无数据）", DIM) end
+    if not any then Add(3, "（无数据）", DIM) end
 
     -- 隐藏本轮没用的分组按钮（否则会残留成"多出来的 +/-"）
     if panel.plus then
@@ -484,7 +485,7 @@ local function Refresh()
     end
 
     -- 高度随内容增长
-    local maxRows = math.max(colCount[1] or 0, colCount[2] or 0, colCount[3] or 0, colCount[4] or 0)
+    local maxRows = math.max(colCount[1] or 0, colCount[2] or 0, colCount[3] or 0)
     if not (C:GetSetting("Camp", "collapsed") and true or false) then
         local h = math.max(180, maxRows * ROW_H + 54)
         if math.abs((panel:GetHeight() or 0) - h) > 1 then
@@ -543,15 +544,18 @@ local function CreatePanel()
     f.icon = icon
     f.title = title
 
-    COL_W = math.floor((1100 - 24) / 4) - 6
+    local widths = { 520, 320, 230 }
     f.cols = {}
-    for i = 1, 4 do
+    local x = 8
+    for i = 1, 3 do
         local col = CreateFrame("Frame", nil, f)
-        col:SetPoint("TOPLEFT", 8 + (i - 1) * (COL_W + 8), -30)
-        col:SetSize(COL_W, 410)
+        col:SetPoint("TOPLEFT", x, -30)
+        col:SetSize(widths[i], 410)
         col.rows = {}
         f.cols[i] = col
+        x = x + widths[i] + 8
     end
+    COL_W = widths[1]
 
     f.plus = {}
     panel = f
