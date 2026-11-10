@@ -274,15 +274,7 @@ local function Refresh()
 
     Header(L("露营物资", "Camping supplies"))
     local expanded = (ns.db and ns.db.campExpanded) or {}
-    if panel.hit then
-        for _, b in pairs(panel.hit) do b:Hide() end
-    end
-    if panel.plus then
-        for _, b in pairs(panel.plus) do b:Hide() end
-    end
-    if panel.itemBtns then
-        for _, b in pairs(panel.itemBtns) do b:Hide() end
-    end
+    local usedPlus, usedItem = {}, {}
     if expanded["__base"] == nil then expanded["__base"] = true end
     if ns.db then ns.db.campExpanded = expanded end
 
@@ -311,6 +303,7 @@ local function Refresh()
                 Refresh()
             end)
             btn:Show()
+            usedPlus[headerIdx] = true
         end
         -- 给标题行挂一个点击区
         if panel.hit then
@@ -375,6 +368,7 @@ local function Refresh()
                 end
             end
             btn:Show()
+            usedItem[rowIdx] = true
         end
         end
     end
@@ -429,6 +423,16 @@ local function Refresh()
                 break
             end
         end
+    end
+
+    if panel.plus then
+        for idx, b in pairs(panel.plus) do if not usedPlus[idx] then b:Hide() end end
+    end
+    if panel.itemBtns then
+        for idx, b in pairs(panel.itemBtns) do if not usedItem[idx] then b:Hide() end end
+    end
+    if panel.hit then
+        for idx, b in pairs(panel.hit) do if not usedPlus[idx] then b:Hide() end end
     end
 
     for i = (panel.lineCount or 0) + 1, #rows do
