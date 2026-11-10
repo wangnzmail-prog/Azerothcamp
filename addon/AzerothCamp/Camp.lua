@@ -17,7 +17,7 @@ local M = C:RegisterModule("Camp", {
     flavors = { forever = true },
     settings = {
         { key = "scale",     type = "number",  default = 1.0, min = 0.8, max = 1.6, step = 0.05, label = L("缩放", "Scale") },
-        { key = "width",     type = "number",  default = 280, min = 200, max = 460, step = 10, label = L("宽度", "Width") },
+        { key = "width",     type = "number",  default = 300, min = 200, max = 520, step = 10, label = L("宽度", "Width") },
         { key = "collapsed", type = "boolean", default = false, label = L("折叠", "Collapsed") },
         { key = "locked",    type = "boolean", default = false, label = L("锁定位置", "Lock") },
         { key = "point",     type = "string",  default = "TOPLEFT", hidden = true },
@@ -149,6 +149,26 @@ local function Rescan()
     state.items = items
     state.toy = toy
 
+    -- 分组：基础 + 各专业
+    local groups, byProf = {}, {}
+    local base = { title = L("基础", "Basic"), items = {} }
+    groups[1] = base
+    for _, it in ipairs(items) do
+        if it.group == "fire" or it.group == "tent" or it.group == "bag" then
+            base.items[#base.items + 1] = it
+        else
+            local key = it.prof or "other"
+            local g = byProf[key]
+            if not g then
+                g = { title = PROF_LABEL[key] or key, items = {} }
+                byProf[key] = g
+                groups[#groups + 1] = g
+            end
+            g.items[#g.items + 1] = it
+        end
+    end
+    state.groups = groups
+
     -- buff
     local buffs = {}
     for _, b in ipairs(BUFFS) do
@@ -187,14 +207,14 @@ local function ApplyCollapse()
     if scroll then
         if collapsed then scroll:Hide() else scroll:Show() end
     end
-    panel:SetHeight(collapsed and 26 or 320)
+    panel:SetHeight(collapsed and 26 or 420)
     if panel.toggle then panel.toggle:SetText(collapsed and "+" or "-") end
 end
 
 local function ApplyLayout()
     if not panel then return end
     panel:SetScale(tonumber(C:GetSetting("Camp", "scale")) or 1)
-    panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 280)
+    panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 300)
     panel.akLocked = C:GetSetting("Camp", "locked") and true or false
     ApplyCollapse()
     T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
@@ -208,7 +228,7 @@ local function Row(i)
         if i == 1 or rows[i - 1] then fs = panel.content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall") end
         fs = fs or panel.content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
         fs:SetJustifyH("LEFT")
-        fs:SetWidth(260)
+        fs:SetWidth(280)
         fs:SetWordWrap(false)
         fs:SetPoint("TOPLEFT", 4, -(i - 1) * ROW_H)
         rows[i] = fs
@@ -228,18 +248,29 @@ local function Header(text)
 end
 
 local DIM = { 0.45, 0.45, 0.48 }
+local PROF_LABEL = {
+    alchemy = L("炼金", "Alchemy"), blacksmithing = L("锻造", "Blacksmithing"),
+    enchanting = L("附魔", "Enchanting"), engineering = L("工程", "Engineering"),
+    herbalism = L("草药", "Herbalism"), leatherworking = L("制皮", "Leatherworking"),
+    mining = L("采矿", "Mining"), skinning = L("剥皮", "Skinning"),
+    tailoring = L("裁缝", "Tailoring"), fishing = L("钓鱼", "Fishing"),
+    firstaid = L("急救", "First Aid"), cooking = L("烹饪", "Cooking"),
+}
 
 local function Refresh()
     if not panel then return end
     panel.lineCount = 0
 
     Header(L("1、露营物资", "1. Camping supplies"))
-    for _, it in ipairs(state.items) do
-        local owned = (it.count or 0) > 0
-        local text = string.format("%s%s|r ×%d  |cff808080%s|r",
-            owned and "|cffffffff" or "|cff606060", it.name or ("item:" .. tostring(it.id)),
-            it.count or 0, it.effect or "")
-        AddLine(text, owned and nil or DIM)
+    for _, g in ipairs(state.groups or {}) do
+        AddLine("|cff7fb0ff[" .. g.title .. "]|r")
+        for _, it in ipairs(g.items) do
+            local owned = (it.count or 0) > 0
+            local text = string.format("  %s%s|r ×%d  |cff808080%s|r",
+                owned and "|cffffffff" or "|cff606060", it.name or ("item:" .. tostring(it.id)),
+                it.count or 0, it.effect or "")
+            AddLine(text, owned and nil or DIM)
+        end
     end
 
     AddLine(" ")
@@ -286,13 +317,13 @@ local function Refresh()
 end
 
 local function OnWheel(_, delta)
-    local smax = math.max(0, (panel.content:GetHeight() or 0) - 300)
+    local smax = math.max(0, (panel.content:GetHeight() or 0) - 380)
     panel.offset = math.min(smax, math.max(0, (panel.offset or 0) - delta * 24))
     panel.content:SetPoint("TOPLEFT", panel.scrollChild or panel.scroll, "TOPLEFT", 0, panel.offset)
 end
 
 local function CreatePanel()
-    local f = T:CreatePanel("AzerothCampFrame", UIParent, 280, 320)
+    local f = T:CreatePanel("AzerothCampFrame", UIParent, 300, 420)
     f:SetFrameStrata("DIALOG")
     f:SetClampedToScreen(true)
 
