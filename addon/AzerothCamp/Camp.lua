@@ -18,7 +18,7 @@ local M = C:RegisterModule("Camp", {
     settings = {
         { key = "scale",     type = "number",  default = 1.0, min = 0.8, max = 1.6, step = 0.05, label = L("缩放", "Scale") },
         { key = "width",     type = "number",  default = 340, min = 240, max = 640, step = 10, label = L("宽度", "Width") },
-        { key = "collapsed", type = "boolean", default = false, label = L("折叠", "Collapsed") },
+        { key = "collapsed", type = "boolean", default = true, label = L("折叠", "Collapsed") },
         { key = "locked",    type = "boolean", default = false, label = L("锁定位置", "Lock") },
         { key = "point",     type = "string",  default = "TOPLEFT", hidden = true },
         { key = "relPoint",  type = "string",  default = "TOPLEFT", hidden = true },
@@ -599,6 +599,14 @@ local function CreatePanel()
     return f
 end
 function M:OnEnable()
+    -- 一次性迁移：无论之前存过什么，首次升级到 1.0.1 后默认只显示图标
+    if ns.db and not ns.db.campDefaultCollapsed then
+        ns.db.campDefaultCollapsed = true
+        ns.db.modules = ns.db.modules or {}
+        ns.db.modules.Camp = ns.db.modules.Camp or {}
+        ns.db.modules.Camp.collapsed = true
+    end
+
     if not panel then
         rows = {}
         CreatePanel()
