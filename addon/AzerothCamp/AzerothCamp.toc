@@ -1,0 +1,17 @@
+## Interface: 16001
+## Title: AzerothCamp
+## Title-zhCN: 露营管理
+## Title-zhTW: 露營管理
+## Notes: Camping assistant for WoW Forever: fire kits, tents, camp items, party sync
+## Notes-zhCN: 无限露营助手：营火/帐篷/营地制品/小队同步
+## Author: DSH
+## Version: 0.17.0-1
+## SavedVariables: AzerothCampDB
+# X-Curse-Project-ID: fill-after-create
+
+Locales.lua
+Shim.lua
+Data\CampItems.lua
+Camp.lua
+Comms.lua
+Commands.lua

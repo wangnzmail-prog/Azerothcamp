@@ -1,53 +1,26 @@
 <#
 .SYNOPSIS
-  从 AzerothKit 的源码构建独立版 AzerothCamp（露营管理），并打出可分发 zip。
+  打包 AzerothCamp（独立露营插件）为可上传 zip。
 
 .NOTES
-  单一源码：Camp.lua / Comms.lua / Data\CampItems.lua 只在 addon\AzerothKit 维护一份，
-  这里把它们 + standalone\Shim.lua 组装成独立插件目录。
+  源码目录就是 addon\AzerothCamp，不再从套件拼装——套件已改为纯框架。
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = '0.15.0'
+    [string]$Version = '0.17.0'
 )
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-$src = Join-Path $repo 'addon\AzerothKit'
-$shim = Join-Path $repo 'standalone\Shim.lua'
-$outRoot = Join-Path $repo 'dist\standalone'
-$addon = Join-Path $outRoot 'AzerothCamp'
+$addon = Join-Path $repo 'addon\AzerothCamp'
 
-if (Test-Path $outRoot) { Remove-Item $outRoot -Recurse -Force }
-New-Item -ItemType Directory -Path (Join-Path $addon 'Data') -Force | Out-Null
+if (-not (Test-Path $addon)) { throw "addon dir not found: $addon" }
 
-Copy-Item $shim (Join-Path $addon 'Shim.lua') -Force
-Copy-Item (Join-Path $src 'Modules\Camp.lua') (Join-Path $addon 'Camp.lua') -Force
-Copy-Item (Join-Path $src 'Modules\Comms.lua') (Join-Path $addon 'Comms.lua') -Force
-Copy-Item (Join-Path $src 'Data\CampItems.lua') (Join-Path $addon 'Data\CampItems.lua') -Force
-Copy-Item (Join-Path $repo 'standalone\Commands.lua') (Join-Path $addon 'Commands.lua') -Force
-Copy-Item (Join-Path $repo 'addon\AzerothKit\Locales.lua') (Join-Path $addon 'Locales.lua') -Force
-Copy-Item (Join-Path $repo 'standalone\LICENSE') (Join-Path $addon 'LICENSE') -Force
-Copy-Item (Join-Path $repo 'standalone\README.md') (Join-Path $addon 'README.md') -Force
-
-$toc = @"
-## Interface: 16001
-## Title: AzerothCamp
-## Title-zhCN: 露营管理
-## Notes: Camping assistant for WoW Forever (campfire, tent, camp items, party sync)
-## Notes-zhCN: 无限露营助手（营火/帐篷/营地制品/小队同步）
-## Author: DSH
-## Version: $Version-1
-## SavedVariables: AzerothCampDB
-## X-Website: https://github.com/
-
-Shim.lua
-Data\CampItems.lua
-Camp.lua
-Comms.lua
-"@
-$utf8 = New-Object System.Text.UTF8Encoding($false)
-[System.IO.File]::WriteAllText((Join-Path $addon 'AzerothCamp.toc'), $toc, $utf8)
+# 版本号写进 TOC
+$tocPath = Join-Path $addon 'AzerothCamp.toc'
+$toc = [System.IO.File]::ReadAllText($tocPath)
+$toc = [regex]::Replace($toc, '## Version: [\d\.]+-\d+', "## Version: $Version-1")
+[System.IO.File]::WriteAllText($tocPath, $toc, (New-Object System.Text.UTF8Encoding($false)))
 
 $zip = Join-Path $repo "dist\AzerothCamp-$Version.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
