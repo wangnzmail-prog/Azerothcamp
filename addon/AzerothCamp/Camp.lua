@@ -417,7 +417,7 @@ local function Refresh()
         if g.dividerBefore then Add(1, "|cff3a3a3a---------|r") end
         local key = (g.title == L("基础", "Basic")) and "__base" or g.title
         local open = expanded[key]
-        Add(1, string.format("   |cff7fb0ff%s|r", g.title))
+        Add(1, string.format("      |cff7fb0ff%s|r", g.title))
         local hdrRow = colCount[1]
         if panel.plus then
             local btn = panel.plus[hdrRow]
