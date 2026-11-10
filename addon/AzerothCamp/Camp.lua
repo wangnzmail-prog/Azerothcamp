@@ -111,6 +111,27 @@ local function FindToy(id, pattern)
     end
 end
 
+local PROF_SKILLLINE = {
+    alchemy = 171, blacksmithing = 164, enchanting = 333, engineering = 202,
+    herbalism = 182, leatherworking = 165, mining = 186, skinning = 393,
+    tailoring = 197, fishing = 356, firstaid = 129, cooking = 185,
+}
+
+local function LearnedSkillLines()
+    local list = {}
+    if type(GetProfessions) ~= "function" or type(GetProfessionInfo) ~= "function" then
+        return list
+    end
+    local p = { GetProfessions() }
+    for _, idx in ipairs(p) do
+        if idx then
+            local ok, skillLine = pcall(function() return select(7, GetProfessionInfo(idx)) end)
+            if ok and skillLine then list[#list + 1] = skillLine end
+        end
+    end
+    return list
+end
+
 local PROF_LABEL = {}
 
 local function Rescan()
@@ -171,7 +192,41 @@ local function Rescan()
             g.items[#g.items + 1] = it
         end
     end
-    state.groups = groups
+    -- 已学专业优先，其余用分隔线隔开
+    local learnedOrder = LearnedSkillLines()
+    local learnedSet = {}
+    for _, sl in ipairs(learnedOrder) do learnedSet[sl] = true end
+
+    local ordered, rest = {}, {}
+    for _, g in ipairs(groups) do
+        if g ~= base then
+            local key = nil
+            for k, v in pairs(PROF_SKILLLINE) do
+                if PROF_LABEL[k] == g.title then key = k end
+            end
+            if key and learnedSet[PROF_SKILLLINE[key]] then
+                ordered[#ordered + 1] = g
+            else
+                rest[#rest + 1] = g
+            end
+        end
+    end
+    -- 按已学顺序重排
+    local byKey = {}
+    for _, g in ipairs(ordered) do
+        for k, v in pairs(PROF_SKILLLINE) do
+            if PROF_LABEL[k] == g.title then byKey[PROF_SKILLLINE[k]] = g end
+        end
+    end
+    local final = { base }
+    for _, sl in ipairs(learnedOrder) do
+        if byKey[sl] then final[#final + 1] = byKey[sl] end
+    end
+    if #rest > 0 then
+        rest[1].dividerBefore = true
+        for _, g in ipairs(rest) do final[#final + 1] = g end
+    end
+    state.groups = final
 
     -- 附近是否已有营火（100 码规则）
     state.nearFire = (AuraByID(1283391) or AuraByID(1289723) or AuraByID(1229739)) ~= nil
@@ -303,6 +358,9 @@ local function Refresh()
     if ns.db then ns.db.campExpanded = expanded end
 
     for _, g in ipairs(state.groups or {}) do
+        if g.dividerBefore then
+            AddLine("|cff3a3a3a--------------------------------------|r")
+        end
         local key = (g.title == L("基础", "Basic")) and "__base" or g.title
         local open = expanded[key]
         local headerIdx = (panel.lineCount or 0) + 1
