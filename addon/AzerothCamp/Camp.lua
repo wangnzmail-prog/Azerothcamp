@@ -323,7 +323,7 @@ end
 local function ApplyLayout()
     if not panel then return end
     panel:SetScale(tonumber(C:GetSetting("Camp", "scale")) or 1)
-    panel:SetWidth(tonumber(C:GetSetting("Camp", "width")) or 340)
+    panel:SetWidth(1100)
     panel.akLocked = C:GetSetting("Camp", "locked") and true or false
     ApplyCollapse()
     T:RestorePosition(panel, "TOPLEFT", "TOPLEFT",
