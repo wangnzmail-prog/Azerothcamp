@@ -297,13 +297,10 @@ local ROW_H = 22
 local function ApplyCollapse()
     if not panel then return end
     local collapsed = C:GetSetting("Camp", "collapsed") and true or false
-    local w = tonumber(C:GetSetting("Camp", "width")) or 340
-
     if collapsed then
         panel:SetSize(32, 32)
         if panel.title then panel.title:Hide() end
-        if panel.reloadBtn then panel.reloadBtn:Hide() end
-        if panel.scroll then panel.scroll:Hide() end
+        if panel.cols then for _, col in ipairs(panel.cols) do col:Hide() end end
         if panel.icon then
             panel.icon:ClearAllPoints()
             panel.icon:SetPoint("CENTER", panel, "CENTER", 0, 0)
@@ -312,10 +309,9 @@ local function ApplyCollapse()
             tonumber(C:GetSetting("Camp", "iconX")) or 20,
             tonumber(C:GetSetting("Camp", "iconY")) or -120)
     else
-        panel:SetSize(w, 660)
+        panel:SetSize(760, 460)
         if panel.title then panel.title:Show() end
-        if panel.reloadBtn then panel.reloadBtn:Show() end
-        if panel.scroll then panel.scroll:Show() end
+        if panel.cols then for _, col in ipairs(panel.cols) do col:Show() end end
         if panel.icon then
             panel.icon:ClearAllPoints()
             panel.icon:SetPoint("TOPRIGHT", -2, -2)
@@ -324,7 +320,6 @@ local function ApplyCollapse()
         panel:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     end
 end
-
 local function ApplyLayout()
     if not panel then return end
     panel:SetScale(tonumber(C:GetSetting("Camp", "scale")) or 1)
@@ -371,222 +366,133 @@ PROF_LABEL = {
     firstaid = L("急救", "First Aid"), cooking = L("烹饪", "Cooking"),
 }
 
+local COL_W = 0
+local colCount = { 0, 0, 0, 0 }
+
+local function Add(col, text, color)
+    colCount[col] = (colCount[col] or 0) + 1
+    local idx = colCount[col]
+    local cols = panel.cols
+    if not cols or not cols[col] then return end
+    cols[col].rows = cols[col].rows or {}
+    local fs = cols[col].rows[idx]
+    if not fs then
+        fs = cols[col]:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        fs:SetJustifyH("LEFT")
+        fs:SetWidth(COL_W)
+        fs:SetWordWrap(false)
+        fs:SetPoint("TOPLEFT", 0, -(idx - 1) * ROW_H)
+        cols[col].rows[idx] = fs
+    end
+    fs:SetText(text)
+    if color then fs:SetTextColor(unpack(color)) else fs:SetTextColor(0.9, 0.9, 0.92) end
+    fs:Show()
+end
+
+local function ClearColumns()
+    colCount = { 0, 0, 0, 0 }
+    if not panel or not panel.cols then return end
+    for i = 1, 4 do
+        for _, fs in ipairs(panel.cols[i].rows or {}) do fs:Hide() end
+    end
+end
+
 local function Refresh()
     if not panel then return end
-    panel.lineCount = 0
+    ClearColumns()
 
-    Header(L("露营物资", "Camping supplies"))
+    -- 列 1：露营物资（可折叠）
+    Add(1, "|cffffd700" .. L("露营物资", "Supplies") .. "|r")
     local expanded = (ns.db and ns.db.campExpanded) or {}
-    local usedPlus, usedItem = {}, {}
     if expanded["__base"] == nil then expanded["__base"] = true end
     if ns.db then ns.db.campExpanded = expanded end
-
     for _, g in ipairs(state.groups or {}) do
-        if g.dividerBefore then
-            AddLine("|cff3a3a3a--------------------------------------|r")
-        end
+        if g.dividerBefore then Add(1, "|cff3a3a3a---------|r") end
         local key = (g.title == L("基础", "Basic")) and "__base" or g.title
         local open = expanded[key]
-        local headerIdx = (panel.lineCount or 0) + 1
-        AddLine(string.format("       |cff7fb0ff%s|r", g.title))
-
+        Add(1, string.format("|cff7fb0ff%s %s|r", open and "-" or "+", g.title))
+        local hdrRow = colCount[1]
         if panel.plus then
-            local btn = panel.plus[headerIdx]
+            local btn = panel.plus[hdrRow]
             if not btn then
-                btn = CreateFrame("Button", nil, panel.content, "UIPanelButtonTemplate")
-                btn:SetSize(20, 20)
+                btn = CreateFrame("Button", nil, panel.cols[1], "UIPanelButtonTemplate")
+                btn:SetSize(18, 18)
                 if btn.GetFontString then
                     local fs = btn:GetFontString()
-                    if fs then fs:SetFont(STANDARD_TEXT_FONT, 14, "") end
+                    if fs then fs:SetFont(STANDARD_TEXT_FONT, 12, "") end
                 end
-                panel.plus[headerIdx] = btn
+                panel.plus[hdrRow] = btn
             end
             btn:ClearAllPoints()
-            btn:SetPoint("TOPLEFT", 3, -((headerIdx - 1) * ROW_H - 1))
+            btn:SetPoint("TOPLEFT", -2, -((hdrRow - 1) * ROW_H + 1))
             btn:SetText(open and "-" or "+")
-            btn:SetScript("OnClick", function()
-                expanded[key] = not expanded[key]
-                Refresh()
-            end)
+            btn:SetScript("OnClick", function() expanded[key] = not expanded[key] Refresh() end)
             btn:Show()
-            usedPlus[headerIdx] = true
-        end
-        -- 给标题行挂一个点击区
-        if panel.hit then
-            local b = panel.hit[headerIdx]
-            if not b then
-                b = CreateFrame("Button", nil, panel.content)
-                b:SetHeight(20)
-                b:SetWidth(290)
-                panel.hit[headerIdx] = b
-            end
-            b:ClearAllPoints()
-            b:SetPoint("TOPLEFT", 2, -((headerIdx - 1) * ROW_H))
-            b:SetWidth(300)
-            b:SetScript("OnClick", function()
-                expanded[key] = not expanded[key]
-                Refresh()
-            end)
-            b:Show()
         end
         if open then
-        for _, it in ipairs(g.items) do
-            local owned = (it.count or 0) > 0
-            local blocked = (it.group == "fire") and state.nearFire
-            local rowIdx = (panel.lineCount or 0) + 1
-            local text = string.format("    %s%s|r ×%d  |cff808080%s|r",
-                (owned and not blocked) and "|cffffffff" or "|cff606060",
-                it.name or ("item:" .. tostring(it.id)),
-                it.count or 0, it.effect or "")
-            if blocked then
-                text = text .. "  |cffcc8040" .. L("（附近已有营火）", "(campfire nearby)") .. "|r"
+            for _, it in ipairs(g.items) do
+                local owned = (it.count or 0) > 0
+                local blocked = (it.group == "fire") and state.nearFire
+                local text = string.format("%s%s|r ×%d %s",
+                    (owned and not blocked) and "|cffffffff" or "|cff606060",
+                    it.name or tostring(it.id), it.count or 0, it.effect or "")
+                Add(1, text, (owned and not blocked) and nil or DIM)
             end
-            AddLine(text, owned and nil or DIM)
-
-            -- 安全按钮：玩家点击才触发，合规且战斗可用
-            local btn = panel.itemBtns[rowIdx]
-            if not btn then
-                btn = CreateFrame("Button", nil, panel.content, "SecureActionButtonTemplate")
-                btn:SetHeight(ROW_H - 2)
-                btn:SetWidth(320)
-                panel.itemBtns[rowIdx] = btn
-            end
-            btn:ClearAllPoints()
-            btn:SetPoint("TOPLEFT", 2, -((rowIdx - 1) * ROW_H))
-            btn:RegisterForClicks("AnyUp")
-            if not (InCombatLockdown and InCombatLockdown()) then
-                if owned and blocked then
-                    btn:SetAttribute("type", nil)
-                    btn:SetAttribute("item", nil)
-                    btn:SetAttribute("toy", nil)
-                elseif owned and it.toy then
-                    btn:SetAttribute("type", "toy")
-                    btn:SetAttribute("toy", "item:" .. it.id)
-                    btn:SetAttribute("item", nil)
-                elseif owned then
-                    btn:SetAttribute("type", "item")
-                    btn:SetAttribute("item", "item:" .. it.id)
-                    btn:SetAttribute("toy", nil)
-                else
-                    btn:SetAttribute("type", nil)
-                    btn:SetAttribute("item", nil)
-                    btn:SetAttribute("toy", nil)
-                end
-            end
-            btn:Show()
-            usedItem[rowIdx] = true
-        end
         end
     end
 
-
-    AddLine(" ")
-    Header(L("露营 buff", "Camp buffs"))
-    if state.nearFire then
-        AddLine("  " .. L("营火在附近", "Campfire Nearby"), { 0.30, 0.80, 0.35 })
-    else
-        AddLine("  " .. L("营火在附近", "Campfire Nearby"), { 0.90, 0.30, 0.30 })
-    end
-
-    local shown = 0
+    -- 列 2：露营 buff
+    Add(2, "|cffffd700" .. L("露营 buff", "Camp buffs") .. "|r")
+    Add(2, state.nearFire and "|cff4dcc59" .. L("营火在附近", "Campfire Nearby") .. "|r"
+        or "|cffcc4d4d" .. L("营火在附近", "Campfire Nearby") .. "|r")
     for _, b in ipairs(state.buffs) do
         if b.active then
-            shown = shown + 1
-            AddLine(string.format("  |cffffffff%s[%s]|r  %s", b.name, b.src, FullTime(b.remain)))
-        end
-    end
-    if shown == 0 then
-        AddLine("  " .. L("（无）", "(none)"), DIM)
-    end
-
-    AddLine(" ")
-    Header(L("其他经验 buff", "Other XP buffs"))
-    if #state.xpbuffs == 0 then
-        AddLine("  " .. L("（无）", "(none)"), DIM)
-    else
-        for _, x in ipairs(state.xpbuffs) do
-            AddLine(string.format("|cffffffff%s|r  %s", x.name, FullTime(x.remain)))
+            Add(2, string.format("%s[%s] %s", b.name, b.src, FullTime(b.remain)))
         end
     end
 
-    AddLine(" ")
-    Header(L("队伍", "Party"))
+    -- 列 3：其他经验 buff
+    Add(3, "|cffffd700" .. L("其他经验 buff", "Other XP") .. "|r")
+    if #state.xpbuffs == 0 then Add(3, "（无）", DIM) end
+    for _, x in ipairs(state.xpbuffs) do
+        Add(3, string.format("%s %s", x.name, FullTime(x.remain)))
+    end
+
+    -- 列 4：队伍
+    Add(4, "|cffffd700" .. L("队伍", "Party") .. "|r")
     local any = false
     for name, p in pairs(state.peers) do
         any = true
-        local cd = tonumber(p.cd) or 0
-        AddLine(string.format("%s  %s  %s", name, tostring(p.cap or "?"), cd > 0 and FullTime(cd) or L("可用", "ready")))
+        Add(4, string.format("%s %s %s", name, tostring(p.cap or "?"),
+            (tonumber(p.cd) or 0) > 0 and FullTime(p.cd) or L("可用", "ready")))
     end
-    if not any then
-        AddLine("  " .. L("（队友未装插件或无数据）", "(no peer data)"), DIM)
-    else
-        -- 缺什么：队友都没有的专业制品
-        local covered = {}
-        for _, p in pairs(state.peers) do covered[p.cap or ""] = true end
-        for _, it in ipairs(state.items) do
-            if it.group == "prof" and (it.count or 0) > 0 and it.prof and not covered[it.prof] then
-                AddLine("  " .. L("建议你放", "suggest") .. ": " .. tostring(it.name), { 0.4, 0.8, 1 })
-                break
-            end
-        end
-    end
-
-    if panel.plus then
-        for idx, b in pairs(panel.plus) do if not usedPlus[idx] then b:Hide() end end
-    end
-    if panel.itemBtns then
-        for idx, b in pairs(panel.itemBtns) do if not usedItem[idx] then b:Hide() end end
-    end
-    if panel.hit then
-        for idx, b in pairs(panel.hit) do if not usedPlus[idx] then b:Hide() end end
-    end
-
-    for i = (panel.lineCount or 0) + 1, #rows do
-        if rows[i] then rows[i]:Hide() end
-    end
-    for i = 1, (panel.lineCount or 0) do
-        if rows[i] then rows[i]:Show() end
-    end
-    panel.content:SetHeight(math.max(10, panel.lineCount * ROW_H))
-end
-
-local function OnWheel(_, delta)
-    local smax = math.max(0, (panel.content:GetHeight() or 0) - 620)
-    panel.offset = math.min(smax, math.max(0, (panel.offset or 0) - delta * 24))
-    panel.content:SetPoint("TOPLEFT", panel.scrollChild or panel.scroll, "TOPLEFT", 0, panel.offset)
+    if not any then Add(4, "（无数据）", DIM) end
 end
 
 local function CreatePanel()
-    local f = T:CreatePanel("AzerothCampFrame", UIParent, 340, 660)
+    local f = T:CreatePanel("AzerothCampFrame", UIParent, 760, 460)
     f:SetFrameStrata("DIALOG")
     f:SetMovable(true)
     f:SetClampedToScreen(true)
+    f:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 
     local title = T:CreateText(f, 12, false)
     title:SetPoint("TOPLEFT", 10, -8)
     title:SetText(L("露营管理", "Camping"))
-
-    f.title = title
 
     local icon = CreateFrame("Button", nil, f)
     icon:SetSize(28, 28)
     icon:SetPoint("TOPRIGHT", -2, -2)
     local tex = icon:CreateTexture(nil, "ARTWORK")
     tex:SetAllPoints()
-    local iconPath = (C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(279981))
-        or "Interface\\Icons\\INV_Misc_Campfire_01"
-    tex:SetTexture(iconPath)
+    tex:SetTexture((C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(279981))
+        or "Interface\\Icons\\INV_Misc_Campfire_01")
     icon:RegisterForDrag("RightButton")
     icon:SetScript("OnDragStart", function()
-        if C:GetSetting("Camp", "collapsed") then
-            f.dragging = true
-            f:StartMoving()
-        else
-            f.dragging = false
-        end
+        if C:GetSetting("Camp", "collapsed") then f.dragging = true f:StartMoving() else f.dragging = false end
     end)
     icon:SetScript("OnDragStop", function()
-        if not f.dragging then return end   -- 展开态右键不应改写图标坐标
+        if not f.dragging then return end
         f.dragging = false
         f:StopMovingOrSizing()
         local es = f:GetEffectiveScale() / UIParent:GetEffectiveScale()
@@ -598,52 +504,23 @@ local function CreatePanel()
         C:SetSetting("Camp", "collapsed", not (C:GetSetting("Camp", "collapsed") and true or false))
         ApplyCollapse()
     end)
-    icon:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-        GameTooltip:SetText(L("露营管理（点击折叠/展开）", "Camping (click to collapse)"))
-        GameTooltip:Show()
-    end)
-    icon:SetScript("OnLeave", function() GameTooltip:Hide() end)
     f.icon = icon
+    f.title = title
 
-    local reloadBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    reloadBtn:SetSize(18, 18)
-    reloadBtn:SetPoint("TOPRIGHT", -26, -4)
-    reloadBtn:SetText("R")
-    if reloadBtn.GetFontString then
-        local fs = reloadBtn:GetFontString()
-        if fs then fs:SetFont(STANDARD_TEXT_FONT, 14, "") end
+    COL_W = math.floor((760 - 24) / 4) - 6
+    f.cols = {}
+    for i = 1, 4 do
+        local col = CreateFrame("Frame", nil, f)
+        col:SetPoint("TOPLEFT", 8 + (i - 1) * (COL_W + 8), -30)
+        col:SetSize(COL_W, 410)
+        col.rows = {}
+        f.cols[i] = col
     end
-    reloadBtn:SetScript("OnClick", function() ReloadUI() end)
-    reloadBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM"); GameTooltip:SetText("Reload UI"); GameTooltip:Show()
-    end)
-    reloadBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    f.reloadBtn = reloadBtn
 
-    local sf = CreateFrame("ScrollFrame", "AzerothCampScroll", f)
-    sf:SetPoint("TOPLEFT", 6, -26)
-    sf:SetPoint("BOTTOMRIGHT", -6, 6)
-    sf:EnableMouseWheel(true)
-    sf:SetScript("OnMouseWheel", OnWheel)
-
-    local content = CreateFrame("Frame", nil, sf)
-    content:SetSize(260, 10)
-    sf:SetScrollChild(content)
-
-    f.scroll = sf
-    f.hit = {}
     f.plus = {}
-    f.itemBtns = {}
-    f.content = content
-    f.offset = 0
     panel = f
-
-    f:SetMovable(true)
-    f:SetClampedToScreen(true)
     return f
 end
-
 function M:OnEnable()
     if not panel then
         rows = {}
