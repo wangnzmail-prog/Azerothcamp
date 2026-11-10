@@ -433,7 +433,13 @@ local function Refresh()
             btn:ClearAllPoints()
             btn:SetPoint("TOPLEFT", 0, -((hdrRow - 1) * ROW_H))
             btn:SetText(open and "-" or "+")
-            btn:SetScript("OnClick", function() expanded[key] = not expanded[key] Refresh() end)
+            btn:SetScript("OnClick", function()
+                local nowOpen = not expanded[key]
+                for k in pairs(expanded) do expanded[k] = false end
+                expanded[key] = nowOpen
+                if ns.db then ns.db.campExpanded = expanded end
+                Refresh()
+            end)
             btn:Show()
             usedPlus[hdrRow] = true
         end
@@ -544,7 +550,7 @@ local function CreatePanel()
     f.icon = icon
     f.title = title
 
-    local widths = { 520, 320, 230 }
+    local widths = { 350, 430, 250 }
     f.cols = {}
     local x = 8
     for i = 1, 3 do
