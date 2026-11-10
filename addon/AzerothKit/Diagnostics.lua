@@ -102,6 +102,19 @@ function D.PrintErrors()
     out("清空: /ak clearerrors   （/reload 后写入 SavedVariables.errors）")
 end
 
+function D.PrintExternal()
+    local list = C:GetProvidedAddons()
+    if #list == 0 then
+        out("没有发现可纳入框架的插件（需要对方声明 ## X-Provides）")
+        return
+    end
+    out(string.format("外部插件 (%d):", #list))
+    for _, e in ipairs(list) do
+        out(string.format("  %-14s %-6s %s %s", e.name, e.version,
+            e.provides, e.loaded and "|cff4dcc59已加载|r" or "|cff808080未加载|r"))
+    end
+end
+
 function D.PrintSchema()
     local order, modules = C:GetModules()
     out("可调项 schema:")
@@ -226,6 +239,7 @@ local function PrintHelp()
     out("  /ak modules      模块列表")
     out("  /ak integrations 第三方插件整合状态")
     out("  /ak camp         露营扫描（物品/配方/玩具/光环）")
+    out("  /ak external     发现可纳入框架的外部插件")
     out("  /ak group        小队露营状态（需队友也装插件）")
     out("  /ak errors       查看记录的报错（/ak clearerrors 清空）")
     out("  /ak schema       可调项 schema（Agent 与面板共用）")

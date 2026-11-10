@@ -27,7 +27,7 @@ local function InstallErrorHook()
 end
 
 -- Lua 层版本号：/reload 就能反映真实代码版本（TOC 的 ## Version 要重启客户端才更新）
-ns.VERSION = "0.17.0"
+ns.VERSION = "0.18.0"
 
 -- ---------- 数据库 ----------
 local DB_DEFAULTS = {
@@ -236,6 +236,30 @@ function C:ApplyIntegrations()
             end
         end
     end
+end
+
+-- ---------- 外部插件发现 ----------
+-- 只读：扫描已装插件中声明了 ## X-Provides 的，列进面板（运行期无法开关别的插件）
+function C:GetProvidedAddons()
+    local list = {}
+    if not (C_AddOns and C_AddOns.GetNumAddOns and C_AddOns.GetAddOnInfo) then
+        return list
+    end
+    for i = 1, C_AddOns.GetNumAddOns() do
+        local name = C_AddOns.GetAddOnInfo(i)
+        if name and name ~= ADDON then
+            local provides = C_AddOns.GetAddOnMetadata(name, "X-Provides")
+            if provides then
+                list[#list + 1] = {
+                    name = name,
+                    provides = provides,
+                    version = C_AddOns.GetAddOnMetadata(name, "Version") or "?",
+                    loaded = C:IsAddonLoaded(name),
+                }
+            end
+        end
+    end
+    return list
 end
 
 -- ---------- 设置 schema ----------
