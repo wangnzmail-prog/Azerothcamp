@@ -255,6 +255,23 @@ local function KitCooldown()
     return 0
 end
 
+-- 按 spellID 精确查一个光环（返回 data 或 nil）
+local function AuraByID(spellID)
+    local api = C_UnitAuras
+    if not api or not api.GetAuraDataByIndex then return nil end
+    for _, filter in ipairs({ "HELPFUL", "HARMFUL" }) do
+        for i = 1, 40 do
+            local ok, data = pcall(api.GetAuraDataByIndex, "player", i, filter)
+            if not ok or not data then break end
+            local sid = data.spellId
+            if sid and not ns.Platform.IsSecret(sid) and sid == spellID then
+                return data
+            end
+        end
+    end
+    return nil
+end
+
 -- 帐篷冷却（玩具 1 小时 / 制皮帐篷同）
 local function TentCooldown()
     local now = GetTime()
@@ -403,7 +420,7 @@ function M:ApplyCollapse()
             if collapsed then obj:Hide() else obj:Show() end
         end
     end
-    panel:SetHeight(collapsed and 26 or 300)
+    panel:SetHeight(collapsed and 26 or 312)
     if panel.version then
         if collapsed then panel.version:Hide() else panel.version:Show() end
     end
@@ -541,6 +558,22 @@ local function Refresh()
     end
 
     -- 光环行
+    -- 睡袋：独立一行，按 spellID 精确读取
+    if panel.bag then
+        local bagItem = state.others and state.others["bag"]
+        local buff = AuraByID(429959)
+        if buff then
+            local stacks = buff.applications or 1
+            local color = (stacks >= 3) and "|cff4dcc59" or "|cfff0d040"
+            panel.bag:SetText(string.format("%s舒适的睡袋（精神饱满）|r x%d %s",
+                color, stacks, FullTime((buff.expirationTime or 0) - GetTime())))
+        elseif bagItem then
+            panel.bag:SetText("|cff606060" .. L("舒适的睡袋（未入睡）", "Sleeping Bag (not resting)") .. "|r")
+        else
+            panel.bag:SetText("")
+        end
+    end
+
     local auras = PlayerAuras()
     if #auras == 0 then
         panel.aura:SetText("|cff606060" .. L("无帐篷光环", "No tent aura") .. "|r")
@@ -592,7 +625,7 @@ local function Refresh()
 end
 
 local function CreatePanel()
-    local p = T:CreatePanel("AzerothKitCamp", UIParent, 250, 300)
+    local p = T:CreatePanel("AzerothKitCamp", UIParent, 250, 312)
     p:SetFrameStrata("LOW")
     p:SetClampedToScreen(true)
 
@@ -678,7 +711,7 @@ local function CreatePanel()
     if p.aura.SetWordWrap then pcall(p.aura.SetWordWrap, p.aura, false) end
 
     p.aura2 = T:CreateText(p, 10, true)
-    p.aura2:SetPoint("TOPLEFT", 10, -272)
+    p.aura2:SetPoint("TOPLEFT", 10, -286)
     p.aura2:SetWidth(228)
     p.aura2:SetText("")
     if p.aura2.SetWordWrap then pcall(p.aura2.SetWordWrap, p.aura2, false) end
@@ -700,7 +733,7 @@ local function CreatePanel()
     p.version:SetText("AzerothKit v" .. tostring(ns.VERSION or "?"))
 
     p.body = { p.fire, fireBtn, p.otherTitle, p.otherLines[1], p.otherLines[2], p.otherLines[3], p.tent, toyBtn, p.tentCraft, craftBtn, p.aid, aidBtn,
-        p.tentStatus, p.fireStatus, p.aura, p.peerTitle, p.peerLines[1], p.peerLines[2], p.peerLines[3] }
+        p.tentStatus, p.fireStatus, p.bag, p.aura, p.peerTitle, p.peerLines[1], p.peerLines[2], p.peerLines[3] }
 
     local toggle = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
     toggle:SetSize(18, 18)
