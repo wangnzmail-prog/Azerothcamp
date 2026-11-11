@@ -5,6 +5,7 @@
 - 客户端：**仅《魔兽世界：无限》1.60.1**（Interface `16001`）——正式服没有露营系统，本插件不上架正式服
 - 语言：**简体中文 / 繁體中文 / English**，跟随游戏语言
 - 作者：DSH · 许可：MIT
+- CurseForge：https://www.curseforge.com/wow/addons/azerothcamp
 
 ## 功能
 
