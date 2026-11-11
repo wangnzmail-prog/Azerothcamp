@@ -35,22 +35,17 @@ jobs:
           unzip -l "AzerothCamp-${VERSION}.zip"
 
       - name: Upload to CurseForge
-        env:
-          CF_API_KEY: ${{ secrets.CF_API_KEY }}
-        run: |
-          set -e
-          if [ -z "$CF_API_KEY" ]; then echo "CF_API_KEY is empty"; exit 1; fi
-          META=$(printf '{"displayName":"AzerothCamp-%s","releaseType":"release","gameVersions":[16001],"changelog":"Release %s","changelogType":"text"}' "$VERSION" "$VERSION")
-          echo "metadata: $META"
-          CODE=$(curl -sS -o cf-response.txt -w "%{http_code}" \
-            -X POST "https://www.curseforge.com/api/projects/1795582/uploadfile" \
-            -H "X-Api-Token: $CF_API_KEY" \
-            -F "metadata=$META;type=application/json" \
-            -F "file=@AzerothCamp-${VERSION}.zip")
-          echo "HTTP $CODE"
-          cat cf-response.txt || true
-          test "$CODE" = "200"
-
+        continue-on-error: true
+        uses: wefhy/curseforge-upload@v3
+        with:
+          token: ${{ secrets.CF_API_KEY }}
+          project_id: '1795582'
+          file_path: AzerothCamp-${{ env.VERSION }}.zip
+          game_endpoint: 'wow'
+          game_versions: '1.60.1'
+          release_type: 'release'
+          changelog: 'Release ${{ env.VERSION }}'
+          changelog_type: 'markdown'
       - name: GitHub release
         uses: softprops/action-gh-release@v2
         with:
