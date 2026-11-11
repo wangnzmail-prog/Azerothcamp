@@ -17,14 +17,44 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Package and upload
-        uses: BigWigsMods/packager@v2
-        with:
-          # -p 指向插件目录（仓库根不是插件根）
-          # -g 指定游戏版本；1.60.1 是 WoW Forever
-          # 不写 -g：让 packager 依据 TOC 的 ## Interface: 16001 推断游戏版本
-          args: -p addon/AzerothCamp
+      - name: Version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Stamp TOC version
+        run: |
+          echo "using version: $VERSION"
+          sed -i "s/^## Version:.*/## Version: ${VERSION}-1/" addon/AzerothCamp/AzerothCamp.toc
+          grep '^## ' addon/AzerothCamp/AzerothCamp.toc
+
+      - name: Package zip
+        run: |
+          cd addon
+          rm -f AzerothCamp/.pkgmeta
+          zip -r "../AzerothCamp-${VERSION}.zip" AzerothCamp
+          cd ..
+          unzip -l "AzerothCamp-${VERSION}.zip"
+
+      - name: Upload to CurseForge
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
-          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
-          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          if [ -z "$CF_API_KEY" ]; then echo "CF_API_KEY is empty"; exit 1; fi
+          META=$(printf '{"displayName":"AzerothCamp-%s","releaseType":"release","gameVersions":[16001],"changelog":"Release %s","changelogType":"text"}' "$VERSION" "$VERSION")
+          echo "metadata: $META"
+          CODE=$(curl -sS -o cf-response.txt -w "%{http_code}" \
+            -X POST "https://www.curseforge.com/api/projects/1795582/uploadfile" \
+            -H "X-Api-Token: $CF_API_KEY" \
+            -F "metadata=$META;type=application/json" \
+            -F "file=@AzerothCamp-${VERSION}.zip")
+          echo "HTTP $CODE"
+          cat cf-response.txt || true
+          test "$CODE" = "200"
+
+      - name: GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: AzerothCamp-*.zip
+          body: |
+            AzerothCamp ${{ env.VERSION }}
+            Published to CurseForge as well.
