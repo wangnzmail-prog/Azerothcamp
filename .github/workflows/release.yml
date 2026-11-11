@@ -22,7 +22,8 @@ jobs:
         with:
           # -p 指向插件目录（仓库根不是插件根）
           # -g 指定游戏版本；1.60.1 是 WoW Forever
-          args: -p addon/AzerothCamp -g 1.60.1
+          # 不写 -g：让 packager 依据 TOC 的 ## Interface: 16001 推断游戏版本
+          args: -p addon/AzerothCamp
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
           WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
