@@ -137,3 +137,24 @@ powershell -ExecutionPolicy Bypass -File tools\build-standalone.ps1 -Version 0.1
 - [ ] 缺少 LICENSE
 - [ ] 混淆/压缩过的 Lua
 - [ ] 使用他人美术资源（我们只用游戏内置贴图路径）
+
+## 八、GitHub 自动发版（已配置）
+
+`.github/workflows/release.yml` 使用 BigWigs packager：推送 `v*` 标签即出包并上传 CurseForge（可选 Wago）。
+
+要在 GitHub 上启用，需要三件事：
+
+1. 建仓库并 push（`addon/AzerothCamp` 就是插件根，workflow 里用 `-p addon/AzerothCamp` 指定）；
+2. 仓库 **Settings → Secrets and variables → Actions** 添加：
+   - `CF_API_KEY`：CurseForge 账号的 API Token（Account → API Tokens）
+   - `WAGO_API_TOKEN`：可选，Wago 上传令牌
+3. 发版：
+
+```bash
+git tag v1.0.7
+git push origin v1.0.7
+```
+
+packager 会读 `addon/AzerothCamp/.pkgmeta`（`package-as: AzerothCamp`），把 TOC 的 `## Version` 换成标签版本，产出 zip 并上传。
+
+> Token 只放 Secrets，不要提交进仓库。

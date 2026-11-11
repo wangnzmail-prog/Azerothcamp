@@ -1,0 +1,6 @@
+package-as: AzerothCamp
+
+ignore:
+  - README.md
+
+enable-nolib-creation: no
