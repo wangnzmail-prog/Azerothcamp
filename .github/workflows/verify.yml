@@ -1,0 +1,63 @@
+name: verify
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install luaparse
+        run: npm install luaparse --no-audit --no-fund
+
+      - name: Lua syntax check
+        run: |
+          node -e '
+          const l = require("luaparse"), fs = require("fs"), p = require("path");
+          let bad = 0, n = 0;
+          (function walk(d) {
+            for (const f of fs.readdirSync(d)) {
+              const fp = p.join(d, f);
+              if (fs.statSync(fp).isDirectory()) walk(fp);
+              else if (f.endsWith(".lua")) {
+                n++;
+                try { l.parse(fs.readFileSync(fp, "utf8")); }
+                catch (e) { bad++; console.error("FAIL " + fp + ": " + e.message); }
+              }
+            }
+          })("addon/AzerothCamp");
+          console.log(n + " files, " + bad + " errors");
+          process.exit(bad ? 1 : 0);
+          '
+
+      - name: No BOM / TOC sanity
+        run: |
+          node -e '
+          const fs = require("fs"), p = require("path");
+          let bad = 0;
+          (function walk(d) {
+            for (const f of fs.readdirSync(d)) {
+              const fp = p.join(d, f);
+              if (fs.statSync(fp).isDirectory()) walk(fp);
+              else if (/\.(lua|toc|xml)$/.test(f)) {
+                const b = fs.readFileSync(fp);
+                if (b.length >= 3 && b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) {
+                  bad++; console.error("BOM: " + fp);
+                }
+              }
+            }
+          })("addon/AzerothCamp");
+          const toc = fs.readFileSync("addon/AzerothCamp/AzerothCamp.toc", "utf8");
+          if (!/^## Interface:\s*16001/m.test(toc)) { bad++; console.error("Interface must be 16001"); }
+          if (!/^## X-Curse-Project-ID:\s*1795582/m.test(toc)) { bad++; console.error("Missing project ID"); }
+          console.log(bad + " problems");
+          process.exit(bad ? 1 : 0);
+          '
